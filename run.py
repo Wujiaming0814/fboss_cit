@@ -3,32 +3,39 @@ import unittest
 import argparse
 import os
 from fboss import Fboss
+from argparse import RawTextHelpFormatter
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="FBOSS BSP Tests Command.")
+    parser = argparse.ArgumentParser(
+        prog="fboss_test",
+        usage="%(prog)s [options]",
+        description="FBOSS BSP Tests Command.",
+        formatter_class=RawTextHelpFormatter,
+    )
     parser.add_argument(
-        "cmd",
-        type=str,
+        "-c",
+        "--cmd",
         default="iob_version",
         help="""bsp command sets. command list:
-                iob_reset
-                iob_uptime
-                iob_general
-                iob_scatch
-                iob_version
-                iob_info
-                spi_udev
-                spi_detect
-                gpio
-                i2c_udev
-                i2c_detect
-                i2c_buses
-                port_led
-                loop_leds
-                xcvrs
-                sensors
-                firmware_upgrade""",
+        iob_reset
+        iob_uptime
+        iob_general
+        iob_scatch
+        iob_version
+        iob_info
+        spi_udev
+        spi_detect
+        gpio
+        i2c_udev
+        i2c_detect
+        i2c_buses
+        port_led
+        loop_leds
+        xcvrs
+        sensors
+        firmware_upgrade
+        all""",
     )
     args = parser.parse_args()
 
@@ -96,5 +103,9 @@ class TestFboss(unittest.TestCase):
 
 if __name__ == "__main__":
     args = get_args()
-    cmd = f"python -m unittest run.TestFboss.test_{args.cmd}"
+    if args.cmd == "all":
+        cmd = f"python -m unittest run.TestFboss"
+    else:
+        cmd = f"python -m unittest run.TestFboss.test_{args.cmd}"
+
     os.system(cmd)
