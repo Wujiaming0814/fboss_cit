@@ -8,24 +8,29 @@ import os
 
 MSG = "\u001b[31mFAIL\u001b[0m\t{}File not exist."
 
-def execute_shell_cmd(cmd:str) -> tuple[bool, str]:
+
+def execute_shell_cmd(cmd: str) -> tuple[bool, str]:
     """Run shell command"""
     stat = True
     try:
-        fp = subprocess.run(cmd.split(), stdout=subprocess.PIPE,                \
-                            stderr=subprocess.PIPE, check=False)
+        fp = subprocess.run(
+            cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
+        )
     except FileNotFoundError as fne:
-        res = fne.strerror + f': {cmd}'
+        res = fne.strerror + f": {cmd}"
         stat = False
     else:
         if fp.returncode:
-            res = (fp.stdout.rstrip(b'\t\n\r')                                  \
-                   + f'\n- Error Code: {fp.returncode}\n- Error:\n'.encode()    \
-                   + fp.stderr.rstrip(b'\t\n\r')).decode()
+            res = (
+                fp.stdout.rstrip(b"\t\n\r")
+                + f"\n- Error Code: {fp.returncode}\n- Error:\n".encode()
+                + fp.stderr.rstrip(b"\t\n\r")
+            ).decode()
             stat = False
         else:
-            res = fp.stdout.rstrip(b'\t\n\r').decode()
+            res = fp.stdout.rstrip(b"\t\n\r").decode()
     return stat, res
+
 
 def get_pci_bdf_info(vendor_id):
     """Get the fpga device bdf"""
@@ -38,11 +43,12 @@ def get_pci_bdf_info(vendor_id):
 
     return bdf_info
 
+
 def read_sysfile_value(devfile):
     """read sysfs file value"""
     if pathlib.Path(devfile).exists():
         try:
-            with open(devfile, 'r', encoding="utf-8") as devfd:
+            with open(devfile, "r", encoding="utf-8") as devfd:
                 val = devfd.read().strip()
         except IOError:
             print(f"FAIL\tcannot open {devfile}")
@@ -57,13 +63,14 @@ def read_sysfile_value(devfile):
 
     return val
 
+
 def write_sysfile_value(devfile, val):
     """write sysfs file value"""
     status = "PASS"
     stat = True
     if pathlib.Path(devfile).exists():
         try:
-            with open(devfile, 'w', encoding="utf-8") as devfd:
+            with open(devfile, "w", encoding="utf-8") as devfd:
                 devfd.write(str(val))
         except IOError:
             status = f"FAIL\tcannot open {devfile}"
@@ -79,31 +86,38 @@ def write_sysfile_value(devfile, val):
 
     return stat, status
 
-CHIP_MAP = {'iob': 'N25Q128..3E',
-            'dom1': 'N25Q128..3E',
-            'dom2': 'N25Q128..3E',
-            'mp3_mcbcpld': 'W25X20',
-            'mp3_smbcpld': 'W25X20',
-            'mp3_scmcpld': 'W25X20',
-            'pwrcpld': 'W25X20',
-            'smbcpld1': 'W25X20',
-            'smbcpld2': 'W25X20'}
 
-GPIOPIN_MAP = {'dom1': '9',
-               'dom2': '10',
-               'mp3_mcbcpld': '3',
-               'mp3_smbcpld': '7',
-               'mp3_scmcpld': '1',
-               'pwrcpld': '3',
-               'smbcpld1': '1',
-               'smbcpld2': '7'}
+CHIP_MAP = {
+    "iob": "N25Q128..3E",
+    "dom1": "N25Q128..3E",
+    "dom2": "N25Q128..3E",
+    "mp3_mcbcpld": "W25X20",
+    "mp3_smbcpld": "W25X20",
+    "mp3_scmcpld": "W25X20",
+    "pwrcpld": "W25X20",
+    "smbcpld1": "W25X20",
+    "smbcpld2": "W25X20",
+}
+
+GPIOPIN_MAP = {
+    "dom1": "9",
+    "dom2": "10",
+    "mp3_mcbcpld": "3",
+    "mp3_smbcpld": "7",
+    "mp3_scmcpld": "1",
+    "pwrcpld": "3",
+    "smbcpld1": "1",
+    "smbcpld2": "7",
+}
+
 
 def select_dom1():
     gpiocmd = "gpioset gpiochip0 9=1"
     os.system(gpiocmd)
 
+
 def firmware_upgrade():
-    ''' Upgrade firmware functionality '''
+    """Upgrade firmware functionality"""
     devices_list = list(CHIP_MAP.keys())
     print(f"Components list: {devices_list}")
     try:
@@ -114,7 +128,9 @@ def firmware_upgrade():
                 if devname in devices_list:
                     break
                 else:
-                   print(f"Invalid Component, try again.\nComponents list: {devices_list}")
+                    print(
+                        f"Invalid Component, try again.\nComponents list: {devices_list}"
+                    )
             else:
                 print("\nError: Input component over 3 times!\n")
                 return
@@ -134,5 +150,5 @@ def firmware_upgrade():
         os.system(upgrade_cmd)
         if gpionum:
             os.system(release_gpiocmd)
-    except EOFError: 
-        print (f"Error: No input or {devname} is reached!")
+    except EOFError:
+        print(f"Error: No input or {devname} is reached!")

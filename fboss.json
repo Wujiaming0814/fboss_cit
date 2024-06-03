@@ -578,5 +578,5 @@
 		"MIN": "0x290"
 	},
 	"bspKmodsRpmName": "fboss_bsp_kmods",
-	"bspKmodsRpmVersion": "0.6.0-1"
+	"bspKmodsRpmVersion": "1.5.0-1"
 }

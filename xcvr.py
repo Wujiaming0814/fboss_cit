@@ -10,6 +10,7 @@ BASE_VALUE = "0x0"
 
 XCVR_UDEV_PATH = "/run/devmap/xcvrs/"
 
+
 def check_xcvr_drv_udev(device):
     """check xcvr driver and udev status"""
     xcvr_file = f"{XCVR_UDEV_PATH}{device}"
@@ -22,6 +23,7 @@ def check_xcvr_drv_udev(device):
 
     return True, XCVR_SUCCESS
 
+
 def get_xcvr_value(device):
     """read xcvr status"""
     devfile = f"{XCVR_UDEV_PATH}{device}"
@@ -31,18 +33,20 @@ def get_xcvr_value(device):
 
     return True, value
 
+
 def set_xcvr_value(device, set_value):
     """setup xcvr status"""
     devfile = f"{XCVR_UDEV_PATH}{device}"
-    stat, _ = write_sysfile_value(devfile,int(set_value, 16))
+    stat, _ = write_sysfile_value(devfile, int(set_value, 16))
     if not stat:
         return XCVR_ERR_2.format(devfile)
 
     return XCVR_SUCCESS
 
+
 def xcvr_object_validate(_xcvr_arg):
     """xcvr object mode validation"""
-    ret , res = XCVR_SUCCESS, []
+    ret, res = XCVR_SUCCESS, []
     stat, ret = check_xcvr_drv_udev(_xcvr_arg)
     if not stat:
         return ret, res
@@ -76,26 +80,31 @@ def xcvr_object_validate(_xcvr_arg):
 
     return ret, res
 
+
 def xcvr_test(port_num):
     """xcvr management test function"""
     for mode in ("xcvr_low_power", "xcvr_reset"):
         print(
-            '-------------------------------------------------------------------------\n'
-            '  PORT ID  |   XCVR UDEV NAME   |  Default Value  |  Test Value  | Status\n'
-            '-------------------------------------------------------------------------'
+            "-------------------------------------------------------------------------\n"
+            "  PORT ID  |   XCVR UDEV NAME   |  Default Value  |  Test Value  | Status\n"
+            "-------------------------------------------------------------------------"
         )
         res = []
-        for i in range (port_num):
-            status = 'PASS'
+        for i in range(port_num):
+            status = "PASS"
             xcvr_item = f"xcvr_{i + 1}/{mode}_{i + 1}"
             ret, res = xcvr_object_validate(xcvr_item)
             if ret != XCVR_SUCCESS:
                 res = ["NA", "NA"]
-                status = '\033[31mFAIL\033[0m\t' + f'{ret}'
-            print(f'{"":>4}{i:>2}{"":>9}{xcvr_item.split("/")[1]:<18}{"":>7}{res[0]:<3}{"":>12}'
-                    + f'{res[1]:<3}{"":>9}{status.ljust(1)} \n', end='')
+                status = "\033[31mFAIL\033[0m\t" + f"{ret}"
+            print(
+                f'{"":>4}{i:>2}{"":>9}{xcvr_item.split("/")[1]:<18}{"":>7}{res[0]:<3}{"":>12}'
+                + f'{res[1]:<3}{"":>9}{status.ljust(1)} \n',
+                end="",
+            )
 
     return XCVR_SUCCESS
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     xcvr_test(33)

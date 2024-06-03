@@ -1,4 +1,5 @@
 """gpio module"""
+
 import os
 import re
 from fboss_utils import execute_shell_cmd
@@ -23,6 +24,7 @@ def detect_gpio_devmap_device():
 
     return GPIO_SUCCESS
 
+
 def get_gpiochipnumber():
     """get gpio pin number"""
     cmd = "gpiodetect"
@@ -34,13 +36,14 @@ def get_gpiochipnumber():
     for line in value.splitlines():
         result = pattern.findall(line)
         if result:
-            gpiochip = line.split('[')[0]
+            gpiochip = line.split("[")[0]
             break
 
-    if 'result' not in dir():
+    if "result" not in dir():
         return False, GPIO_ERR_1
 
     return stat, gpiochip
+
 
 def set_gpio_output(gpiochip, pingnumber, write):
     """get gpio pin direction"""
@@ -58,6 +61,7 @@ def set_gpio_output(gpiochip, pingnumber, write):
 
     return GPIO_SUCCESS
 
+
 def set_gpio_input(gpiochip, pinnum):
     """set gpiochip pin direction as input"""
     cmd = f"gpioget {gpiochip} {pinnum}"
@@ -66,6 +70,7 @@ def set_gpio_input(gpiochip, pinnum):
         return GPIO_ERR_1
 
     return GPIO_SUCCESS
+
 
 def check_gpio_direction(gpiochip, pinnum):
     """check gpiochip pin directtion"""
@@ -76,19 +81,21 @@ def check_gpio_direction(gpiochip, pinnum):
 
     return value.splitlines()[pinnum + 1].split()[4]
 
+
 def check_set_gpio_output_success():
     """test gpio control function"""
-    bus_info  = "/run/devmap/i2c-busses/IOB_I2C_BUS_6"
+    bus_info = "/run/devmap/i2c-busses/IOB_I2C_BUS_6"
     if not os.path.exists(bus_info):
         return GPIO_ERR_2.format("IOB_I2C_BUS_6")
 
     i2c_number = i2cbus.get_i2c_bus_id("IOB_I2C_BUS_6")
-    cmd = f'i2cget -y -f -a {i2c_number} 0x50'
+    cmd = f"i2cget -y -f -a {i2c_number} 0x50"
     stat, _ = execute_shell_cmd(cmd)
     if not stat:
         return GPIO_ERR_4
 
     return GPIO_SUCCESS
+
 
 def test_gpio_pin_direction(gpiochip, pinnum):
     """test gpio pin setup and verify status"""
@@ -100,6 +107,7 @@ def test_gpio_pin_direction(gpiochip, pinnum):
         status = "PASS"
 
     return status, _direction
+
 
 def test_gpio(platform):
     """test gpio function"""
@@ -126,18 +134,22 @@ def test_gpio(platform):
             return ret
 
     print(
-        '  GPIO CHIP | PIN ID | Default Directtion | Directtion Test | Status\n'
-        '-------------------------------------------------------------------------'
+        "  GPIO CHIP | PIN ID | Default Directtion | Directtion Test | Status\n"
+        "-------------------------------------------------------------------------"
     )
     default_direction = ""
     for i in range(72):
         default_direction = check_gpio_direction(gpiochip, i)
         status, direction = test_gpio_pin_direction(gpiochip, i)
-        print(f'{"":2}{gpiochip:>5} {i:>5d}{"":5}{default_direction:>10s}'
-                + f'{"":15}{direction:>6}{"":8}{status.ljust(1)} \n', end='')
+        print(
+            f'{"":2}{gpiochip:>5} {i:>5d}{"":5}{default_direction:>10s}'
+            + f'{"":15}{direction:>6}{"":8}{status.ljust(1)} \n',
+            end="",
+        )
         set_gpio_input(gpiochip, i)
 
     return GPIO_SUCCESS
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     test_gpio()

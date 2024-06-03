@@ -14,12 +14,12 @@ LED_OFF = 0
 
 TABLE_FLAG = "-----+-----+-----+-----+"
 
+
 def test_led_udev_path():
     """check port led udev"""
     stat = True
     rtn_msg = "PASS"
-    if not os.path.exists(LEDS_CLASS) or    \
-            not os.listdir(LEDS_CLASS):
+    if not os.path.exists(LEDS_CLASS) or not os.listdir(LEDS_CLASS):
         stat = False
         rtn_msg = "\033[31mFAIL\033[0m\t, LED driver error."
     if not os.path.exists(LEDS_CLASS):
@@ -30,12 +30,13 @@ def test_led_udev_path():
         rtn_msg = "\033[31mFAIL\033[0m\t, leds udev mapping error."
     return stat, rtn_msg
 
+
 def get_port_led_status(leds_path, portid, ledidx):
     """get port led status"""
-    #port10_led1:yellow:status
+    # port10_led1:yellow:status
     for color in ["yellow", "blue", "green"]:
         led_status = f"port{portid}_led{ledidx}:{color}:status/brightness"
-        devfile = f'{leds_path}{led_status}'
+        devfile = f"{leds_path}{led_status}"
         color_val = read_sysfile_value(devfile)
         if not color_val:
             return None
@@ -45,46 +46,51 @@ def get_port_led_status(leds_path, portid, ledidx):
 
     return "off"
 
+
 def save_led_default_status(ports) -> dict:
     """save port led status"""
     port_info_dict = {}
     for num in range(ports):
-        port = num +1
-        for ledidx in range(1,3):
-            port_info = f'{port}_{ledidx}'
+        port = num + 1
+        for ledidx in range(1, 3):
+            port_info = f"{port}_{ledidx}"
             color = get_port_led_status(LEDS_CLASS, port, ledidx)
-            port_info_dict.update({port_info:color})
+            port_info_dict.update({port_info: color})
 
     return port_info_dict
+
 
 def port_led_on(portid, ledidx, color):
     """light on port led"""
     status = "PASS"
     led_status = f"port{portid}_led{ledidx}:{color}:status/brightness"
-    devfile = f'{LEDS_CLASS}{led_status}'
+    devfile = f"{LEDS_CLASS}{led_status}"
     stat = write_sysfile_value(devfile, LED_ON)
     if not stat:
         status = "\033[31mFAIL\033[0m\tcontrol led command error"
     return status
+
 
 def port_led_off(portid, ledidx):
     """light off port led"""
     status = "PASS"
     color = get_port_led_status(LEDS_CLASS, portid, ledidx)
     led_status = f"port{portid}_led{ledidx}:{color}:status/brightness"
-    devfile = f'{LEDS_CLASS}{led_status}'
+    devfile = f"{LEDS_CLASS}{led_status}"
     stat = write_sysfile_value(devfile, LED_OFF)
     if not stat:
         status = "\033[31mFAIL\033[0m\tcontrol led command error"
     return status
 
-def restore_leds_default_status(leds_status:dict):
+
+def restore_leds_default_status(leds_status: dict):
     """save port led status"""
     for items in leds_status.items():
         if items[1] == "off":
-            port_led_off(int(items[0].split('_')[0]), items[0].split('_')[1])
+            port_led_off(int(items[0].split("_")[0]), items[0].split("_")[1])
         else:
-            port_led_on(int(items[0].split('_')[0]), items[0].split('_')[1], items[1])
+            port_led_on(int(items[0].split("_")[0]), items[0].split("_")[1], items[1])
+
 
 def turn_off_ports_led(port_nums):
     """turn off all ports led"""
@@ -99,6 +105,7 @@ def turn_off_ports_led(port_nums):
 
     return status
 
+
 def turn_on_ports_left_led(port_nums, color):
     status = "PASS"
     for i in range(port_nums):
@@ -106,12 +113,14 @@ def turn_on_ports_left_led(port_nums, color):
         status = port_led_on(portid, 1, color)
     return status
 
+
 def turn_on_ports_right_led(port_nums, color):
     status = "PASS"
     for i in range(port_nums):
         portid = i + 1
         status = port_led_on(portid, 2, color)
     return status
+
 
 def loop_port_leds(portid):
     """loop light on ports led"""
@@ -121,11 +130,12 @@ def loop_port_leds(portid):
             stat = port_led_on(portid, ledidx, color)
             if not stat:
                 status = "\033[31mFAIL\033[0m\tcontrol led command error"
-            time.sleep(0.2) #switch color delay 0.2 seconds
-            print(f'led:turn on port_{portid} index_{ledidx} {color}\r\n' ,end='')
+            time.sleep(0.2)  # switch color delay 0.2 seconds
+            print(f"led:turn on port_{portid} index_{ledidx} {color}\r\n", end="")
     return status
 
-def port_led_status(pnum, portid, status:list):
+
+def port_led_status(pnum, portid, status: list):
     line_info = ""
     for i in range(pnum):
         _left = status[portid + 6 * i]
@@ -135,10 +145,11 @@ def port_led_status(pnum, portid, status:list):
         line_info += f" {left_flag.upper()[0]} {right_flag.upper()[0]} |"
     return line_info
 
-def janga_port_led_status(status:list):
+
+def janga_port_led_status(status: list):
     port_left = f'{"x" if status[0] == "off" else status[0]}'
     port_right = f'{"x" if status[1] == "off" else status[1]}'
-    first_line = f'| {port_left.upper()[0]} {port_right.upper()[0]} |'
+    first_line = f"| {port_left.upper()[0]} {port_right.upper()[0]} |"
     port_left = f'{"x" if status[2] == "off" else status[2]}'
     port_right = f'{"x" if status[3] == "off" else status[3]}'
     second_line = f"| {port_left.upper()[0]} {port_right.upper()[0]} |"
@@ -149,7 +160,8 @@ def janga_port_led_status(status:list):
 
     return first_line, second_line, third_line
 
-def tahan_port_led_status(status:list):
+
+def tahan_port_led_status(status: list):
     first_line = "|"
     second_line = "|"
     third_line = "|     |"
@@ -159,10 +171,11 @@ def tahan_port_led_status(status:list):
 
     return first_line, second_line, third_line
 
+
 def janga_port_led_status_test(port_count):
     """janga blade ports led status test"""
     current_color_dict = {}
-    #show ports led status
+    # show ports led status
     current_color_dict = save_led_default_status(port_count)
     if not bool(current_color_dict):
         return False, "FAIL"
@@ -178,12 +191,13 @@ def janga_port_led_status_test(port_count):
 
     return True, "PASS"
 
+
 def tahan_port_led_status_test(port_count):
     """tahan blade ports led status test"""
     current_color_dict = {}
-    #show ports led status
+    # show ports led status
     current_color_dict = save_led_default_status(port_count)
-    #print(current_color_dict)
+    # print(current_color_dict)
     if not bool(current_color_dict):
         return False, "FAIL"
     color_info = list(current_color_dict.values())
@@ -198,10 +212,11 @@ def tahan_port_led_status_test(port_count):
 
     return True, "PASS"
 
+
 def montblanc_port_led_status_test(port_count):
     """janga blade ports led status test"""
     current_color_dict = {}
-    #show ports led status
+    # show ports led status
     current_color_dict = save_led_default_status(port_count)
     if not bool(current_color_dict):
         return False, "FAIL"
@@ -223,7 +238,8 @@ def montblanc_port_led_status_test(port_count):
 
     return True, "PASS"
 
-def port_led_turn_on_off(port_nums, platform = "janga"):
+
+def port_led_turn_on_off(port_nums, platform="janga"):
     status = "PASS"
     # turn off all ports
     status = turn_off_ports_led(port_nums)
@@ -235,7 +251,8 @@ def port_led_turn_on_off(port_nums, platform = "janga"):
 
     return status
 
-def ports_led_light_status_test(port_nums, platform = "tahan"):
+
+def ports_led_light_status_test(port_nums, platform="tahan"):
     stat = True
     status = "PASS"
     default_color_dict = {}
@@ -243,46 +260,55 @@ def ports_led_light_status_test(port_nums, platform = "tahan"):
     if not stat:
         return stat, status
 
-    func_name = f'{platform}_port_led_status_test'
-    #save port led default color
+    func_name = f"{platform}_port_led_status_test"
+    # save port led default color
     default_color_dict = save_led_default_status(port_nums)
     if not bool(default_color_dict):
         return False, "FAIL"
     # show ports led default status
-    print('-------------------------------------------------------------------------\n'
-            '                   |    Ports Led Default status    |')
+    print(
+        "-------------------------------------------------------------------------\n"
+        "                   |    Ports Led Default status    |"
+    )
     stat, status = eval(func_name)(port_nums)
     if not stat:
         return stat, status
-    time.sleep(0.5) #wait 0.5 seconds check leds status
+    time.sleep(0.5)  # wait 0.5 seconds check leds status
     status = turn_off_ports_led(port_nums)
-    print('-------------------------------------------------------------------------\n'
-            '                  |    Turn off all ports Led Test    |')
+    print(
+        "-------------------------------------------------------------------------\n"
+        "                  |    Turn off all ports Led Test    |"
+    )
     stat, status = eval(func_name)(port_nums)
     if not stat:
         return stat, status
-    time.sleep(0.5) #wait 0.5 seconds check leds status
+    time.sleep(0.5)  # wait 0.5 seconds check leds status
     # turn on left side leds color green
     tatus = turn_on_ports_left_led(port_nums, "green")
-    print('-------------------------------------------------------------------------\n'
-            '               |    Turn on left ports Led green Test    |')
+    print(
+        "-------------------------------------------------------------------------\n"
+        "               |    Turn on left ports Led green Test    |"
+    )
     stat, status = eval(func_name)(port_nums)
     if not stat:
         return stat, status
-    time.sleep(0.5) #wait 0.5 seconds check leds status
+    time.sleep(0.5)  # wait 0.5 seconds check leds status
     status = turn_off_ports_led(port_nums)
     status = turn_on_ports_right_led(port_nums, "blue")
-    print('-------------------------------------------------------------------------\n'
-            '               |    Turn on right ports Led blue Test    |')
+    print(
+        "-------------------------------------------------------------------------\n"
+        "               |    Turn on right ports Led blue Test    |"
+    )
     stat, status = eval(func_name)(port_nums)
     if not stat:
         return stat, status
-    time.sleep(0.5) #wait 0.5 seconds check leds status
+    time.sleep(0.5)  # wait 0.5 seconds check leds status
 
     # restore port led status
     restore_leds_default_status(default_color_dict)
 
     return stat, status
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     ports_led_light_status_test(33)
