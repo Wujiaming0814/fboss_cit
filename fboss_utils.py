@@ -8,6 +8,47 @@ import os
 
 MSG = "\u001b[31mFAIL\u001b[0m\t{}File not exist."
 
+term_colors = [
+    '\033[1;31m', #red,
+    '\033[1;32m', #green,
+    '\033[1;33m', #yellow,
+    '\033[1;34m', #blue,
+    '\033[1;35m', #purple,
+    '\033[1;36m', #cian,
+]
+last_color = 0
+
+def print_dict(dictionary, previous='', indent=0, colors=False):
+
+    """
+    Description:
+        Function that prints out a dictionary beautifully.
+
+    Args:
+        dictionary (dict): Simple or composite Python dictionary to be printed on screen
+        previous (str, optional): Support variable used by the function when working in a recursive way.
+                                  To avoid performance problems, it is recommended to leave the variable
+                                  at its default value.. Defaults to ''.
+        indent (int, optional): Total tabs used by the function to print a dictionary on the screen.
+                                Defaults to 0.
+    
+    Return:
+        None
+    """
+    global last_color
+    if isinstance(dictionary,dict):
+        for key in dictionary.keys():
+            if isinstance(dictionary[key],dict):
+                if colors:
+                    print('\t'*indent, term_colors[indent]+str(key)+':\033[00m')
+                else:
+                    print('\t'*indent, str(key)+':')
+            print_dict(dictionary[key], previous=key, indent=indent+1, colors=colors)
+    else:
+        if colors:
+            print('\t'*(indent-1), term_colors[indent+1]+str(previous)+':\033[00m', dictionary)
+        else:
+            print('\t'*(indent-1), str(previous)+':', dictionary)
 
 def execute_shell_cmd(cmd: str) -> tuple[bool, str]:
     """Run shell command"""
