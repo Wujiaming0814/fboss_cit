@@ -78,6 +78,26 @@ J3_SENSOR = [
     "SMB_U353_ADC128D818_3:001f:fbiob iob_i2c_master.26 at 0xfb505a00:in0_input:in1_input",
 ]
 
+def check_file_type(path):
+    """
+    Checks the file type of a given path.
+
+    Args:
+        path: The path to the file.
+
+    Returns:
+        A string indicating the file type, or None if the file does not exist.
+    """
+
+    if not os.path.exists(path):
+        return None
+
+    if os.path.isfile(path):
+        return True
+    elif os.path.isdir(path):
+        return False
+    else:
+        return None
 
 def get_subdirectories(path):
     """
@@ -102,9 +122,12 @@ def get_subdirectories(path):
 
 def get_device_name(path):
     """ """
-
+    dev_name = None
     dev_path = os.path.join(path, "name")
-    if os.exists(dev_path):
+    if check_file_type(dev_path):
+        return dev_name
+
+    if os.path.exists(dev_path):
         cmd = f"cat {dev_path}"
         dev_name = os.system(cmd)
 
@@ -115,8 +138,9 @@ def sensors_folder_list():
     """ """
     sensors_list = get_subdirectories(HWMON_PATH)
 
-    for item in os.listdir(sensors_list):
-        name = get_device_name(item)
+    for item in sensors_list:
+        item_path = os.path.join(HWMON_PATH, item)
+        name = get_device_name(item_path)
 
 
 def check_sensor_physical_channel(name, chip_id, channel):
@@ -238,6 +262,108 @@ def sensor_test(platform):
         )
     return status
 
+class Hwmon():
+
+    def __init__(self):
+        self.master_path = '/sys/class/hwmon'
+
+    def read_data(self, data_path):
+        file = open(data_path, 'r')
+        data = file.read().strip()
+        file.close()
+        return data
+
+    def extract_data(self, sub_folder_path, file_):
+
+        if os.path.exists(os.path.join(sub_folder_path, file_.split('_')[0] + '_label')):
+
+            label_name = file_.split('_')[0] + '_label'
+
+            label_name = self.read_data(os.path.join(sub_folder_path, label_name))
+            # only read input data, not to read the "*_input_highest" and "*_input_lowest"
+            if '_input_' not in file_:
+                value = self.read_data(os.path.join(sub_folder_path, file_))
+
+        else:
+
+            label_name = file_.split('_')[0]
+            value = self.read_data(os.path.join(sub_folder_path, file_))
+
+        # See https://www.kernel.org/doc/Documentation/hwmon/sysfs-interface
+        if file_.lower().startswith('in'):
+            return label_name, str(int(value) / 1000) + ' V'
+        elif file_.lower().startswith('fan'):
+            return label_name, value + ' RPM'
+        elif file_.lower().startswith('pwm'):
+            return label_name, str(int(value) / 255) + ' PWM (%)'
+        elif file_.lower().startswith('temp'):
+            return label_name, str(int(value) / 1000) + ' C'
+        elif file_.lower().startswith('curr'):
+            return label_name, str(int(value) / 1000) + ' A'
+        elif file_.lower().startswith('power'):
+            return label_name, str(int(value) / 1000000) + ' W'
+        elif file_.lower().startswith('freq'):
+            return label_name, str(int(value) / 1000000) + ' MHz'
+
+    def data(self):
+
+        data = dict()
+
+        folders = os.listdir(self.master_path)
+
+        for folder in folders:
+
+            sub_folder_path = os.path.join(self.master_path, folder)
+
+            files = os.listdir(sub_folder_path)
+
+            name_key = self.read_data(os.path.join(sub_folder_path, 'name'))
+
+            symlink = os.readlink(os.path.join(sub_folder_path, 'device'))
+            symlink = symlink.strip().split("/")[-1]
+            sensor_name = f"{name_key}-{symlink}"
+
+            data[sensor_name] = dict()
+
+            for file_ in files:
+
+                try:
+
+                    if '_input' in file_:
+                        label_name, value = self.extract_data(sub_folder_path, file_)
+                        data[sensor_name][label_name] = value
+
+                    if '_average' in file_:
+                        label_name, value = self.extract_data(sub_folder_path, file_)
+                        data[sensor_name][label_name] = value
+
+                except Exception:
+                    pass
+
+            estimate_w = []
+
+            for sensor in data.keys():
+
+                for value in data[sensor].keys():
+
+                    if data[sensor][value].endswith("v"):
+
+                        try:
+                            v = float(data[sensor][value].split(" ")[0])
+                            i = float(data[sensor]["I" + value[1:]].split(" ")[0])
+                            estimate_w.append([sensor, "W" + value[1:] + "*", round(v*i,4)])
+                        except Exception:
+                            pass
+
+            for value in estimate_w:
+                data[value[0]][value[1]] = str(value[2]) + " w"
+
+        return data
+
+    def print_data(self, colors=False):
+        print_dict(self.data(), indent=0, colors=colors)
 
 if __name__ == "__main__":
     sensor_test("tahan")
+    print(Hwmon().data())
+    print(Hwmon().print_data())
