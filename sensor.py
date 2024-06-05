@@ -267,6 +267,24 @@ class Hwmon():
     def __init__(self):
         self.master_path = '/sys/class/hwmon'
 
+    def value_format(self, attributes_file, value):
+
+         # See https://www.kernel.org/doc/Documentation/hwmon/sysfs-interface
+        if attributes_file.lower().startswith('in'):
+            return str(int(value) / 1000) + ' V'
+        elif attributes_file.lower().startswith('fan'):
+            return value + ' RPM'
+        elif attributes_file.lower().startswith('pwm'):
+            return str(int(value) / 255) + ' PWM (%)'
+        elif attributes_file.lower().startswith('temp'):
+            return str(int(value) / 1000) + ' C'
+        elif attributes_file.lower().startswith('curr'):
+            return str(int(value) / 1000) + ' A'
+        elif attributes_file.lower().startswith('power'):
+            return str(int(value) / 1000000) + ' W'
+        elif attributes_file.lower().startswith('freq'):
+            return str(int(value) / 1000000) + ' MHz'
+
     def read_data(self, data_path):
         file = open(data_path, 'r')
         data = file.read().strip()
@@ -275,9 +293,13 @@ class Hwmon():
 
     def extract_data(self, sub_folder_path, file_):
 
-        if os.path.exists(os.path.join(sub_folder_path, file_.split('_')[0] + '_label')):
+        # split file header
+        file_key = file_.split('_')[0]
 
-            label_name = file_.split('_')[0] + '_label'
+        # read in/fan/temp/curr/power/energy/humidity[0-*]_input data
+        if os.path.exists(os.path.join(sub_folder_path, file_key + '_label')):
+
+            label_name = file_key + '_label'
 
             label_name = self.read_data(os.path.join(sub_folder_path, label_name))
             # only read input data, not to read the "*_input_highest" and "*_input_lowest"
@@ -286,24 +308,10 @@ class Hwmon():
 
         else:
 
-            label_name = file_.split('_')[0]
+            label_name = file_key
             value = self.read_data(os.path.join(sub_folder_path, file_))
 
-        # See https://www.kernel.org/doc/Documentation/hwmon/sysfs-interface
-        if file_.lower().startswith('in'):
-            return label_name, str(int(value) / 1000) + ' V'
-        elif file_.lower().startswith('fan'):
-            return label_name, value + ' RPM'
-        elif file_.lower().startswith('pwm'):
-            return label_name, str(int(value) / 255) + ' PWM (%)'
-        elif file_.lower().startswith('temp'):
-            return label_name, str(int(value) / 1000) + ' C'
-        elif file_.lower().startswith('curr'):
-            return label_name, str(int(value) / 1000) + ' A'
-        elif file_.lower().startswith('power'):
-            return label_name, str(int(value) / 1000000) + ' W'
-        elif file_.lower().startswith('freq'):
-            return label_name, str(int(value) / 1000000) + ' MHz'
+        return label_name, self.value_format(file_, value)
 
     def data(self):
 
@@ -365,5 +373,5 @@ class Hwmon():
 
 if __name__ == "__main__":
     sensor_test("tahan")
-    print(Hwmon().data())
+    #print(Hwmon().data())
     print(Hwmon().print_data())
