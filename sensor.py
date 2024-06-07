@@ -266,6 +266,7 @@ class Hwmon():
 
     def __init__(self):
         self.master_path = '/sys/class/hwmon'
+        self.attributes_list = ["_max", "_min", "_crit", "_lcrit"]
 
     def value_format(self, attributes_file, value):
 
@@ -293,6 +294,9 @@ class Hwmon():
 
     def extract_data(self, sub_folder_path, file_):
 
+        # initial hwmon data list
+        hwmon_data = []
+        data = dict()
         # split file header
         file_key = file_.split('_')[0]
 
@@ -311,8 +315,19 @@ class Hwmon():
             label_name = file_key
             value = self.read_data(os.path.join(sub_folder_path, file_))
 
-        return label_name, self.value_format(file_, value)
+        data[label_name] = self.value_format(file_, value)
+        hwmon_data.append(data)
 
+        for file in self.attributes_list:
+            file_id = file_key + file
+            file_name = label_name + file
+            if os.path.exists(os.path.join(sub_folder_path, file_id)):
+                value = self.read_data(os.path.join(sub_folder_path, file_id))
+                data[file_name] = self.value_format(file_id, value)
+                hwmon_data.append(data)
+
+        return hwmon_data
+    
     def data(self):
 
         data = dict()
@@ -338,12 +353,14 @@ class Hwmon():
                 try:
 
                     if '_input' in file_:
-                        label_name, value = self.extract_data(sub_folder_path, file_)
-                        data[sensor_name][label_name] = value
+                        hwmon_data = self.extract_data(sub_folder_path, file_)
+                        for label_name in hwmon_data:
+                            data[sensor_name].update(label_name)
 
                     if '_average' in file_:
-                        label_name, value = self.extract_data(sub_folder_path, file_)
-                        data[sensor_name][label_name] = value
+                        hwmon_data = self.extract_data(sub_folder_path, file_)
+                        for label_name in hwmon_data:
+                            data[sensor_name].update(label_name)
 
                 except Exception:
                     pass
@@ -368,10 +385,12 @@ class Hwmon():
 
         return data
 
-    def print_data(self, colors=False):
+    def print_data(self, colors=True):
         print_dict(self.data(), indent=0, colors=colors)
 
+import pprint
+
 if __name__ == "__main__":
-    sensor_test("tahan")
-    #print(Hwmon().data())
-    print(Hwmon().print_data())
+    #sensor_test("tahan")
+    pprint.pprint(Hwmon().data())
+    #print(Hwmon().print_data())
