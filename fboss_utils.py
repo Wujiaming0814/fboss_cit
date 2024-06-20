@@ -51,16 +51,16 @@ def print_dict(dictionary, previous='', indent=0, colors=False):
             print('\t'*(indent-1), str(previous)+':', dictionary)
 
 def print_red(str_val):
-    print('\t', term_colors[0]+str(str_val)+':\033[00m')
+    print("\t", term_colors[0]+str(str_val)+'\033[00m', end="")
     
 def print_green(str_val):
-    print('\t', term_colors[1]+str(str_val)+':\033[00m')
+    print("\t", term_colors[1]+str(str_val)+'\033[00m', end="")
 
 def print_yellow(str_val):
-    print('\t', term_colors[2]+str(str_val)+':\033[00m')
+    print("\t", term_colors[2]+str(str_val)+'\033[00m', end="")
 
 def print_blue(str_val):
-    print('\t', term_colors[3]+str(str_val)+':\033[00m')
+    print("\t", term_colors[3]+str(str_val)+'\033[00m', end="")
     
 def execute_shell_cmd(cmd: str) -> tuple[bool, str]:
     """Run shell command"""

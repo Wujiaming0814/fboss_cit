@@ -1,6 +1,6 @@
 import os
 
-from fboss_utils import print_dict
+from fboss_utils import print_dict, print_green, print_blue 
 
 class Hwmon():
 
@@ -12,19 +12,19 @@ class Hwmon():
 
          # See https://www.kernel.org/doc/Documentation/hwmon/sysfs-interface
         if attributes_file.lower().startswith('in'):
-            return str(int(value) / 1000) + ' V'
+            return str(round(int(value) / 1000 ,2)) + ' V'
         elif attributes_file.lower().startswith('fan'):
             return value + ' RPM'
         elif attributes_file.lower().startswith('pwm'):
-            return str(int(value) / 255) + ' PWM (%)'
+            return str(round(int(value) / 255, 2)) + ' PWM (%)'
         elif attributes_file.lower().startswith('temp'):
-            return str(int(value) / 1000) + ' C'
+            return str(round(int(value) / 1000, 2)) + ' C'
         elif attributes_file.lower().startswith('curr'):
-            return str(int(value) / 1000) + ' A'
+            return str(round(int(value) / 1000, 2)) + ' A'
         elif attributes_file.lower().startswith('power'):
-            return str(int(value) / 1000000) + ' W'
+            return str(round(int(value) / 1000000, 2)) + ' W'
         elif attributes_file.lower().startswith('freq'):
-            return str(int(value) / 1000000) + ' MHz'
+            return str(round(int(value) / 1000000, 2)) + ' MHz'
 
     def read_data(self, data_path):
         file = open(data_path, 'r')
@@ -35,8 +35,9 @@ class Hwmon():
     def extract_data(self, sub_folder_path, file_):
 
         # initial hwmon data list
-        hwmon_data = []
+        hwmon_data = [ None for n in range(5) ]
         data = dict()
+        idx = 0
         # split file header
         file_key = file_.split('_')[0]
 
@@ -55,18 +56,19 @@ class Hwmon():
             label_name = file_key
             value = self.read_data(os.path.join(sub_folder_path, file_))
 
-        data[label_name] = self.value_format(file_, value)
-        hwmon_data.append(data)
+        hwmon_data[idx] = self.value_format(file_, value)
 
         for file in self.attributes_list:
+            idx += 1
             file_id = file_key + file
             file_name = label_name + file
             if os.path.exists(os.path.join(sub_folder_path, file_id)):
                 value = self.read_data(os.path.join(sub_folder_path, file_id))
-                data[file_name] = self.value_format(file_id, value)
-                hwmon_data.append(data)
+                hwmon_data[idx] = self.value_format(file_id, value)
 
-        return hwmon_data
+        data[label_name] = hwmon_data
+
+        return data
     
     def data(self):
 
@@ -97,42 +99,57 @@ class Hwmon():
 
                     if '_input' in file_:
                         hwmon_data = self.extract_data(sub_folder_path, file_)
-                        for label_name in hwmon_data:
-                            data[sensor_name].update(label_name)
+                        data[sensor_name].update(hwmon_data)
 
                     if '_average' in file_:
                         hwmon_data = self.extract_data(sub_folder_path, file_)
-                        for label_name in hwmon_data:
-                            data[sensor_name].update(label_name)
+                        data[sensor_name].update(hwmon_data)
 
                 except Exception:
                     pass
 
-            estimate_w = []
+            # estimate_w = []
 
-            for sensor in data.keys():
+            # for sensor in data.keys():
 
-                for value in data[sensor].keys():
+            #     for value in data[sensor].keys():
 
-                    if data[sensor][value].endswith("v"):
+            #         if data[sensor][value].endswith("V"):
 
-                        try:
-                            v = float(data[sensor][value].split(" ")[0])
-                            i = float(data[sensor]["I" + value[1:]].split(" ")[0])
-                            estimate_w.append([sensor, "W" + value[1:] + "*", round(v*i,4)])
-                        except Exception:
-                            pass
+            #             try:
+            #                 v = float(data[sensor][value].split(" ")[0])
+            #                 i = float(data[sensor]["I" + value[1:]].split(" ")[0])
+            #                 estimate_w.append([sensor, "W" + value[1:] + "*", round(v*i,4)])
+            #             except Exception:
+            #                 pass
 
-            for value in estimate_w:
-                data[value[0]][value[1]] = str(value[2]) + " w"
+            # for value in estimate_w:
+            #     data[value[0]][value[1]] = str(value[2]) + " w"
 
         return data
 
     def print_data(self, colors=True):
         print_dict(self.data(), indent=0, colors=colors)
-    
-    def print_data_format(self):
-        TABLE_FLAG = "-----+-----+-----+-----+"
-        print("+" + TABLE_FLAG * 4)
-        print("|")
-        print("+" + TABLE_FLAG * 4)
+
+    def print_data_format(self, dictionary):
+        TABLE_FLAG = "-----+-----+"
+        print("+" + TABLE_FLAG * 8)
+        if isinstance(dictionary,dict):
+            for key in dictionary.keys():
+                indent = 1
+                print("|", key.center(21), "|", "value".center(10), end="")
+                print( "|", "Max Value".center(9), "|", "Min Value".center(10), end="")
+                print( "|", "Crit Max".center(9), "|", "Crit Min".center(9), "|", "Status".center(9), "|")
+                print("+" + TABLE_FLAG * 8)
+                status = "PASS"
+                if isinstance(dictionary[key], dict):
+                    for key_list in sorted(dictionary[key].keys()):
+                        print("|", key_list.center(22), end="")
+                        for n in range(5):
+                            if dictionary[key][key_list][n]:
+                                print("|", dictionary[key][key_list][n].center(10), end="")
+                            else:
+                                print("|", "-".center(10), end="")
+                        print("|", status.center(9), "|")
+                        
+                    print("+" + TABLE_FLAG * 8)
