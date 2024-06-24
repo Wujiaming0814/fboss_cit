@@ -267,5 +267,5 @@ import pprint
 if __name__ == "__main__":
     #sensor_test("tahan")
     #print(Hwmon().data())
-    print(Hwmon().print_data_format(Hwmon().data()))
+    print(Hwmon().print_data_format())
     #print(Hwmon().print_data())

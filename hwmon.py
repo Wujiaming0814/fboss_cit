@@ -131,8 +131,9 @@ class Hwmon():
     def print_data(self, colors=True):
         print_dict(self.data(), indent=0, colors=colors)
 
-    def print_data_format(self, dictionary):
-        TABLE_FLAG = "-----+-----+"
+    def print_data_format(self):
+        TABLE_FLAG = "-----------+"
+        dictionary = self.data()
         print("+" + TABLE_FLAG * 8)
         if isinstance(dictionary,dict):
             for key in dictionary.keys():
