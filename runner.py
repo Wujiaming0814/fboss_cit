@@ -3,17 +3,49 @@
 import unittest
 import argparse
 import os
+import sys
 from fboss import Fboss
 from argparse import RawTextHelpFormatter
 
 
-def get_args():
+def arg_parser():
+
+    cit_description = """
+    CIT supports running following classes of tests:
+
+    Running tests on target BMC: test pattern "test_*"
+    Running tests on target BMC & CPU from outside BMC: test pattern "external_*"
+    Running tests on target BMC & CPU from outside BMC: test pattern "external_fw_upgrade*"
+    Running stress tests on target BMC: test pattern "stress_*"
+
+    Usage Examples:
+    On devserver:
+    List tests : python cit_runner.py --platform wedge100 --list-tests --start-dir tests/
+    List tests that need to connect to BMC: python cit_runner.py --platform wedge100 --list-tests --start-dir tests/ --external --host "NAME"
+    List real upgrade firmware external tests that connect to BMC: python cit_runner.py --platform wedge100 --list-tests --start-dir tests/ --upgrade-fw
+    Run tests that need to connect to BMC: python cit_runner.py --platform wedge100 --start-dir tests/ --external --bmc-host "NAME"
+    Run real upgrade firmware external tests that connect to BMC: python cit_runner.py --platform wedge100 --run-tests "path" --upgrade --bmc-host "NAME" --firmware-opt-args="-f -v"
+    Run single/test that need connect to BMC: python cit_runner.py --run-test "path" --external --host "NAME"
+
+    On BMC:
+    List tests : python cit_runner.py --platform wedge100 --list-tests
+    Run tests : python cit_runner.py --platform wedge100
+    Run single test/module : python cit_runner.py --run-test "path"
+    """
+
     parser = argparse.ArgumentParser(
         prog="fboss_test",
         usage="%(prog)s [options]",
-        description="FBOSS BSP Tests Command.",
-        formatter_class=RawTextHelpFormatter,
+        epilog=cit_description, formatter_class=argparse.RawDescriptionHelpFormatter
     )
+
+    parser.add_argument(
+        "--run-test",
+        "-r",
+        help="Path to run a single test. Example: \
+                        tests.wedge100.test_eeprom.EepromTest.test_odm_pcb",
+    )
+
     parser.add_argument(
         "-c",
         "--cmd",
@@ -35,12 +67,12 @@ def get_args():
         loop_leds
         xcvrs
         sensors
+        hwmon
         firmware_upgrade
         all""",
     )
-    args = parser.parse_args()
 
-    return args
+    return parser.parse_args()
 
 
 class TestFboss(unittest.TestCase):
@@ -98,15 +130,20 @@ class TestFboss(unittest.TestCase):
         self.fboss.fboss_sensor_test()
         self.fboss.fboss_end_flag_test()
 
+    def test_hwmon(self):
+         self.fboss.fboss_hwmon_test()
+
     def test_firmware_upgrade(self):
         self.fboss.fboss_firmware_test()
 
 
 if __name__ == "__main__":
-    args = get_args()
+    #unittest.main(verbosity=2)
+    args = arg_parser()
+
     if args.cmd == "all":
-        cmd = f"python -m unittest run.TestFboss"
+        cmd = f"python -m unittest runner.TestFboss"
     else:
-        cmd = f"python -m unittest run.TestFboss.test_{args.cmd}"
+        cmd = f"python -m unittest runner.TestFboss.test_{args.cmd}"
 
     os.system(cmd)

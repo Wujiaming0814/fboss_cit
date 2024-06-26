@@ -262,7 +262,8 @@ def sensor_test(platform):
         )
     return status
 
-import pprint
+def hwmon_data():
+    print(Hwmon().print_data_format())
 
 if __name__ == "__main__":
     #sensor_test("tahan")

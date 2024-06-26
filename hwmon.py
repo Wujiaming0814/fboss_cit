@@ -1,6 +1,6 @@
 import os
 
-from fboss_utils import print_dict, print_green, print_blue 
+from fboss_utils import print_dict
 
 class Hwmon():
 
@@ -131,17 +131,34 @@ class Hwmon():
     def print_data(self, colors=True):
         print_dict(self.data(), indent=0, colors=colors)
 
+    def compare_element(self, list_data):
+
+        status = True
+
+        if isinstance(list_data, list):
+            for n in range(len(list_data)):
+                if list_data[n]:
+                    if n%2 == 0:
+                        if float(list_data[0].split(" ")[0]) < float(list_data[n].split(" ")[0]):
+                            status = False
+                    else:
+                        if float(list_data[0].split(" ")[0]) > float(list_data[n].split(" ")[0]):
+                            status = False
+
+        return status
+
     def print_data_format(self):
         TABLE_FLAG = "-----------+"
         dictionary = self.data()
-        print("+" + TABLE_FLAG * 8)
+        print("+------------" + TABLE_FLAG * 7)
         if isinstance(dictionary,dict):
             for key in dictionary.keys():
                 indent = 1
                 print("|", key.center(21), "|", "value".center(10), end="")
                 print( "|", "Max Value".center(9), "|", "Min Value".center(10), end="")
-                print( "|", "Crit Max".center(9), "|", "Crit Min".center(9), "|", "Status".center(9), "|")
-                print("+" + TABLE_FLAG * 8)
+                print( "|", "Crit Max".center(10), "|", end="")
+                print("Crit Min".center(9), "|", "Status".center(9), "|")
+                print("+------------" + TABLE_FLAG * 7)
                 status = "PASS"
                 if isinstance(dictionary[key], dict):
                     for key_list in sorted(dictionary[key].keys()):
@@ -151,6 +168,10 @@ class Hwmon():
                                 print("|", dictionary[key][key_list][n].center(10), end="")
                             else:
                                 print("|", "-".center(10), end="")
+
+                        if not self.compare_element(dictionary[key][key_list]):
+                            status = "FAIL"
+
                         print("|", status.center(9), "|")
                         
-                    print("+" + TABLE_FLAG * 8)
+                    print("+------------" + TABLE_FLAG * 7)

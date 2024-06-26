@@ -625,6 +625,15 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
         sensor.sensors_folder_list()
         return sensor.sensor_test(self._platform)
 
+    def fboss_hwmon_test(self):
+        """sensors hwmon functon"""
+        print(
+            "-------------------------------------------------------------------------\n"
+            "                        |  Sensor devices Test  |\n"
+            "-------------------------------------------------------------------------"
+        )
+        return sensor.hwmon_data()
+
     def fboss_firmware_test(self):
         print(
             "-------------------------------------------------------------------------\n"
