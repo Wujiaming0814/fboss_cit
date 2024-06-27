@@ -13,10 +13,10 @@ def arg_parser():
     cit_description = """
     CIT supports running following classes of tests:
 
-    Running tests on target BMC: test pattern "test_*"
-    Running tests on target BMC & CPU from outside BMC: test pattern "external_*"
-    Running tests on target BMC & CPU from outside BMC: test pattern "external_fw_upgrade*"
-    Running stress tests on target BMC: test pattern "stress_*"
+    Running tests on target FBOSS: test pattern "test_*"
+    Running tests on target FBOSS from outside BMC: test pattern "external_*"
+    Running tests on target FBOSS from outside BMC: test pattern "external_fw_upgrade*"
+    Running stress tests on target FBOSS: test pattern "stress_*"
 
     Usage Examples:
     On devserver:
@@ -36,40 +36,41 @@ def arg_parser():
     parser = argparse.ArgumentParser(
         prog="fboss_test",
         usage="%(prog)s [options]",
-        epilog=cit_description, formatter_class=argparse.RawDescriptionHelpFormatter
+        epilog=cit_description, formatter_class=argparse.RawTextHelpFormatter
     )
 
     parser.add_argument(
         "--run-test",
         "-r",
-        help="Path to run a single test. Example: \
-                        tests.wedge100.test_eeprom.EepromTest.test_odm_pcb",
+        help="""Path to run a single test. Example:
+            tests.wedge100.test_eeprom.EepromTest.test_odm_pcb""",
     )
 
     parser.add_argument(
         "-c",
         "--cmd",
         default="iob_version",
-        help="""bsp command sets. command list:
-        iob_reset
-        iob_uptime
-        iob_general
-        iob_scatch
-        iob_version
-        iob_info
-        spi_udev
-        spi_detect
-        gpio
-        i2c_udev
-        i2c_detect
-        i2c_buses
-        port_led
-        loop_leds
-        xcvrs
-        sensors
-        hwmon
-        firmware_upgrade
-        all""",
+        help="""bsp command sets.
+command list:
+    iob_reset
+    iob_uptime
+    iob_general
+    iob_scatch
+    iob_version
+    iob_info
+    spi_udev
+    spi_detect
+    gpio
+    i2c_udev
+    i2c_detect
+    i2c_buses
+    port_led
+    loop_leds
+    xcvrs
+    sensors
+    hwmon
+    firmware_upgrade
+    all""",
     )
 
     return parser.parse_args()
@@ -78,7 +79,7 @@ def arg_parser():
 class TestFboss(unittest.TestCase):
 
     def setUp(self):
-        self.fboss = Fboss("./fboss.json")
+        self.fboss = Fboss("./fboss_dvt.json")
 
     def test_iob_reset(self):
         self.fboss.iob_logic_reset_active()

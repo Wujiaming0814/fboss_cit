@@ -1,0 +1,601 @@
+{
+	"platformName": {
+		"0x1": "montblanc",
+		"0x4": "janga",
+		"0xc": "tahan"
+	},
+	"i2cDeviceConfigs": {
+		"iobBusCount": 27,
+		"montblancXcvrCount": 65,
+		"jangaXcvrCount": 46,
+		"tahanXcvrCount": 33,
+		"tahan_i2c_bus_map": {
+			"IOB_I2C_BUS_2": [
+				"0x6a"
+			],
+			"IOB_I2C_BUS_3": [
+				"0x35"
+			],
+			"IOB_I2C_BUS_4": [
+				"0x76"
+			],
+			"IOB_I2C_BUS_6": [
+				"0x50"
+			],
+			"IOB_I2C_BUS_7": [
+				"0x40"
+			],
+			"IOB_I2C_BUS_8": [
+				"0x44"
+			],
+			"IOB_I2C_BUS_9": [
+				"0x56"
+			],
+			"IOB_I2C_BUS_10": [
+				"0x33",
+				"0x3E"
+			],
+			"IOB_I2C_BUS_11": [
+				"0x68",
+				"0x6a"
+			],
+			"IOB_I2C_BUS_12": [
+				"0x70",
+				"0x72"
+			],
+			"IOB_I2C_BUS_13": [
+				"0x48",
+				"0x49"
+			],
+			"IOB_I2C_BUS_14": [
+				"0x4c"
+			],
+			"IOB_I2C_BUS_15": [
+				"0xF",
+				"0x1F",
+				"0x48",
+				"0x4A",
+				"0x56"
+			],
+			"IOB_I2C_BUS_16": [
+				"0x60"
+			],
+			"IOB_I2C_BUS_17": [
+				"0x48",
+				"0x49"
+			],
+			"IOB_I2C_BUS_20": [
+				"0x4A",
+				"0x51"
+			],
+			"IOB_I2C_BUS_21": [
+				"0x48"
+			],
+			"IOB_I2C_BUS_22": [
+				"0x10",
+				"0x48",
+				"0x60",
+				"0x61"
+			],
+			"IOB_I2C_BUS_23": [
+				"0x6F"
+			],
+			"IOB_I2C_BUS_24": [
+				"0x10",
+				"0x11",
+				"0x12",
+				"0x15",
+				"0x16",
+				"0x22",
+				"0x45",
+				"0x66",
+				"0x76"
+			],
+			"IOB_I2C_BUS_25": [
+				"0x48",
+				"0x49"
+			],
+			"IOB_I2C_BUS_26": [
+				"0x1D",
+				"0x35",
+				"0x37"
+			],
+			"IOB_I2C_BUS_27": [
+				"0x1D",
+				"0x35",
+				"0x37"
+			]
+		},
+		"janga_i2c_bus_map": {
+			"IOB_I2C_BUS_2": [
+				"0x48"
+			],
+			"IOB_I2C_BUS_3": [
+				"0x35"
+			],
+			"IOB_I2C_BUS_4": [
+				"0x48",
+				"0x7a",
+				"0x7d"
+			],
+			"IOB_I2C_BUS_5": [
+				"0x49",
+				"0x4a"
+			],
+			"IOB_I2C_BUS_6": [
+				"0x50"
+			],
+			"IOB_I2C_BUS_7": [
+				"0x40"
+			],
+			"IOB_I2C_BUS_8": [
+				"0x44"
+			],
+			"IOB_I2C_BUS_9": [
+				"0x56"
+			],
+			"IOB_I2C_BUS_10": [
+				"0x33",
+				"0x3e"
+			],
+			"IOB_I2C_BUS_11": [
+				"0x76",
+				"0x7a",
+				"0x7b",
+				"0x7e"
+			],
+			"IOB_I2C_BUS_12": [
+				"0x60",
+				"0x76",
+				"0x7b",
+				"0x7d"
+			],
+			"IOB_I2C_BUS_13": [
+				"0x48",
+				"0x49"
+			],
+			"IOB_I2C_BUS_15": [
+				"0xf",
+				"0x1f",
+				"0x48",
+				"0x4a",
+				"0x56"
+			],
+			"IOB_I2C_BUS_16": [
+				"0x60"
+			],
+			"IOB_I2C_BUS_17": [
+				"0x44"
+			],
+			"IOB_I2C_BUS_20": [
+				"0x4a",
+				"0x51"
+			],
+			"IOB_I2C_BUS_21": [
+				"0x6f"
+			],
+			"IOB_I2C_BUS_22": [
+				"0x10",
+				"0x48",
+				"0x4a",
+				"0x60",
+				"0x61"
+			],
+			"IOB_I2C_BUS_23": [
+				"0x37",
+				"0x6c"
+			],
+			"IOB_I2C_BUS_24": [
+				"0x10",
+				"0x11",
+				"0x12",
+				"0x15",
+				"0x16",
+				"0x22",
+				"0x45",
+				"0x66",
+				"0x76"
+			],
+			"IOB_I2C_BUS_25": [
+				"0x1d",
+				"0x37"
+			],
+			"IOB_I2C_BUS_26": [
+				"0x1d",
+				"0x37"
+			],
+			"IOB_I2C_BUS_27": [
+				"0x1d",
+				"0x1f",
+				"0x37"
+			]
+		},
+		"montblanc_i2c_bus_map": {
+			"IOB_I2C_BUS_1": [
+				"0x70"
+			],
+			"IOB_I2C_BUS_2": [
+				"0x70"
+			],
+			"IOB_I2C_BUS_3": [
+				"0x35",
+				"0x54"
+			],
+			"IOB_I2C_BUS_4": [
+				"0x76"
+			],
+			"IOB_I2C_BUS_5": [
+				"0x48",
+				"0x51",
+				"0x55",
+				"0x59"
+			],
+			"IOB_I2C_BUS_6": [
+				"0x48",
+				"0x51",
+				"0x55",
+				"0x59"
+			],
+			"IOB_I2C_BUS_7": [
+				"0x1f"
+			],
+			"IOB_I2C_BUS_8": [
+				"0x44"
+			],
+			"IOB_I2C_BUS_9": [
+				"0x35"
+			],
+			"IOB_I2C_BUS_10": [
+				"0x33",
+				"0x3e",
+				"0x50"
+			],
+			"IOB_I2C_BUS_11": [
+				"0x6a"
+			],
+			"IOB_I2C_BUS_12": [
+				"0x70"
+			],
+			"IOB_I2C_BUS_13": [
+				"0x4e"
+			],
+			"IOB_I2C_BUS_14": [
+				"0x33",
+				"0x60"
+			],
+			"IOB_I2C_BUS_15": [
+				"0x53"
+			],
+			"IOB_I2C_BUS_16": [
+				"0x49",
+				"0x4b",
+				"0x51"
+			],
+			"IOB_I2C_BUS_17": [
+				"0x49",
+				"0x4b",
+				"0x51"
+			],
+			"IOB_I2C_BUS_18": [
+				"0x0f",
+				"0x1f",
+				"0x48",
+				"0x4a",
+				"0x56",
+				"0x5e"
+			],
+			"IOB_I2C_BUS_19": [
+				"0x4c"
+			],
+			"IOB_I2C_BUS_20": [
+				"0x4c"
+			],
+			"IOB_I2C_BUS_21": [
+				"0x4c"
+			],
+			"IOB_I2C_BUS_22": [
+				"0x4c"
+			],
+			"IOB_I2C_BUS_23": [
+				"0x4c"
+			],
+			"IOB_I2C_BUS_24": [
+				"0x4c"
+			],
+			"IOB_I2C_BUS_25": [
+				"0x4c"
+			],
+			"IOB_I2C_BUS_26": [
+				"0x4c"
+			],
+			"IOB_I2C_BUS_27": [
+				"0x37"
+			],
+			"IOB0_PCA9548_CH1": [
+				"0x44",
+				"0x70"
+			],
+			"IOB0_PCA9548_CH2": [
+				"0x4c",
+				"0x4d",
+				"0x70"
+			],
+			"IOB0_PCA9548_CH3": [
+				"0x37",
+				"0x70"
+			],
+			"IOB0_PCA9548_CH4": [
+				"0x4c",
+				"0x70"
+			],
+			"IOB0_PCA9548_CH7": [
+				"0x6f",
+				"0x70"
+			],
+			"IOB0_PCA9548_CH8": [
+				"0x4a",
+				"0x51",
+				"0x70"
+			],
+			"IOB1_PCA9546_CH1": [
+				"0x40",
+				"0x70"
+			],
+			"IOB1_PCA9546_CH2": [
+				"0x10",
+				"0x11",
+				"0x12",
+				"0x15",
+				"0x16",
+				"0x22",
+				"0x45",
+				"0x66",
+				"0x70",
+				"0x76"
+			],
+			"DOM1_I2C_BUS_33": [
+				"0x48",
+				"0x51",
+				"0x70"
+			],
+			"DOM1_I2C_BUS_34": [
+				"0x48",
+				"0x49"
+			],
+			"DOM2_I2C_BUS_33": [
+				"0x48",
+				"0x51",
+				"0x70"
+			],
+			"DOM2_I2C_BUS_34": [
+				"0x4A",
+				"0x4B"
+			]
+		},
+		"xcvrDevicesMap": [
+			"0x50"
+		]
+	},
+	"spiMasterConfigs": {
+		"montblanc_spidev_map": {
+			"iob": {
+				"bus": 0,
+				"gpiopin": [],
+				"flash_size": 16384,
+				"chip": "MT25QL128",
+				"udev": "IOB_FLASH"
+			},
+			"dom1": {
+				"bus": 1,
+				"gpiopin": [
+					9
+				],
+				"flash_size": 16384,
+				"chip": "MT25QL128",
+				"udev": "DOM1_FLASH"
+			},
+			"dom2": {
+				"bus": 2,
+				"gpiopin": [
+					10
+				],
+				"flash_size": 16384,
+				"chip": "MT25QL128",
+				"udev": "DOM2_FLASH"
+			},
+			"mcb": {
+				"bus": 3,
+				"gpiopin": [
+					3
+				],
+				"flash_size": 256,
+				"chip": "W25X20",
+				"udev": "MCBCPLD_FLASH"
+			},
+			"smb": {
+				"bus": 4,
+				"gpiopin": [
+					7
+				],
+				"flash_size": 256,
+				"chip": "W25X20",
+				"udev": "SMBCPLD_FLASH"
+			},
+			"th5": {
+				"bus": 5,
+				"gpiopin": [
+					8
+				],
+				"flash_size": 16384,
+				"chip": "NMT25QL128",
+				"udev": "TH5_FLASH"
+			},
+			"scm": {
+				"bus": 6,
+				"gpiopin": [
+					1
+				],
+				"flash_size": 256,
+				"chip": "W25X20",
+				"udev": "I210_SCMCPLD_FLASH"
+			},
+			"i210": {
+				"bus": 6,
+				"gpiopin": [
+					0,
+					2
+				],
+				"flash_size": 4096,
+				"chip": "W25Q32.V",
+				"udev": "I210_SCMCPLD_FLASH"
+			}
+		},
+		"janga_spidev_map": {
+			"iob": {
+				"bus": 0,
+				"gpiopin": [],
+				"flash_size": 16384,
+				"chip": "MT25QL128",
+				"udev": "IOB_FLASH"
+			},
+			"dom": {
+				"bus": 1,
+				"gpiopin": [
+					9
+				],
+				"flash_size": 16384,
+				"chip": "MT25QL128",
+				"udev": "DOM1_FLASH"
+			},
+			"j3b": {
+				"bus": 2,
+				"gpiopin": [
+					10
+				],
+				"flash_size": 32768,
+				"chip": "MT25QU256",
+				"udev": "J3B_FLASH"
+			},
+			"pwr": {
+				"bus": 3,
+				"gpiopin": [
+					3
+				],
+				"flash_size": 256,
+				"chip": "W25X20",
+				"udev": "PWRCPLD_FLASH"
+			},
+			"smb_2": {
+				"bus": 4,
+				"gpiopin": [
+					7
+				],
+				"flash_size": 256,
+				"chip": "W25X20",
+				"udev": "SMBCPLD2_FLASH"
+			},
+			"j3a": {
+				"bus": 5,
+				"gpiopin": [
+					8
+				],
+				"flash_size": 32768,
+				"chip": "MT25QU256",
+				"udev": "J3A_FLASH"
+			},
+			"smb_1": {
+				"bus": 6,
+				"gpiopin": [
+					1
+				],
+				"flash_size": 256,
+				"chip": "W25X20",
+				"udev": "SMBCPLD1_FLASH"
+			},
+			"i210": {
+				"bus": 7,
+				"gpiopin": [
+					2
+				],
+				"flash_size": 4096,
+				"chip": "W25Q32JV",
+				"udev": "I210_FLASH"
+			}
+		},
+		"tahan_spidev_map": {
+			"iob": {
+				"bus": 0,
+				"gpiopin": [],
+				"flash_size": 16384,
+				"chip": "MT25QL128",
+				"udev": "IOB_FLASH"
+			},
+			"dom": {
+				"bus": 1,
+				"gpiopin": [
+					9
+				],
+				"flash_size": 16384,
+				"chip": "MT25QL128",
+				"udev": "DOM1_FLASH"
+			},
+			"pwr": {
+				"bus": 3,
+				"gpiopin": [
+					3
+				],
+				"flash_size": 256,
+				"chip": "W25X20",
+				"udev": "PWRCPLD_FLASH"
+			},
+			"smb_2": {
+				"bus": 4,
+				"gpiopin": [
+					7
+				],
+				"flash_size": 256,
+				"chip": "W25X20",
+				"udev": "SMBCPLD2_FLASH"
+			},
+			"th5": {
+				"bus": 5,
+				"gpiopin": [
+					8
+				],
+				"flash_size": 32768,
+				"chip": "MT25QU256",
+				"udev": "TH5_FLASH"
+			},
+			"smb_1": {
+				"bus": 6,
+				"gpiopin": [
+					1
+				],
+				"flash_size": 256,
+				"chip": "W25X20",
+				"udev": "SMBCPLD1_FLASH"
+			},
+			"i210": {
+				"bus": 7,
+				"gpiopin": [
+					2
+				],
+				"flash_size": 4096,
+				"chip": "W25Q32JV",
+				"udev": "I210_FLASH"
+			}
+		}
+	},
+	"ledCtrlConfigs": {
+		"montblancLedsCount": 64,
+		"jangaLedsCount": 46,
+		"tahanLedsCount": 33
+	},
+	"iobXADCRegisters": {
+		"MAX": "0x280",
+		"XADC": "0x200",
+		"MIN": "0x290"
+	},
+	"bspKmodsRpmName": "fboss_bsp_kmods",
+	"bspKmodsRpmVersion": "1.5.0-1"
+}

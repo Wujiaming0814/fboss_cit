@@ -27,32 +27,23 @@ class Hwmon():
             return str(round(int(value) / 1000000, 2)) + ' MHz'
 
     def read_data(self, data_path):
-        file = open(data_path, 'r')
-        data = file.read().strip()
-        file.close()
-        return data
+        """Reads data from a file."""
+        with open(data_path, 'r') as file:
+            return file.read().strip()
 
     def extract_data(self, sub_folder_path, file_):
-
-        # initial hwmon data list
-        hwmon_data = [ None for n in range(5) ]
-        data = dict()
+        """Extracts data for a specific sensor attribute."""
+        hwmon_data = [None for _ in range(5)]
+        data = {}
         idx = 0
-        # split file header
         file_key = file_.split('_')[0]
 
-        # read in/fan/temp/curr/power/energy/humidity[0-*]_input data
         if os.path.exists(os.path.join(sub_folder_path, file_key + '_label')):
-
             label_name = file_key + '_label'
-
             label_name = self.read_data(os.path.join(sub_folder_path, label_name))
-            # only read input data, not to read the "*_input_highest" and "*_input_lowest"
             if '_input_' not in file_:
                 value = self.read_data(os.path.join(sub_folder_path, file_))
-
         else:
-
             label_name = file_key
             value = self.read_data(os.path.join(sub_folder_path, file_))
 
@@ -61,52 +52,36 @@ class Hwmon():
         for file in self.attributes_list:
             idx += 1
             file_id = file_key + file
-            file_name = label_name + file
+
             if os.path.exists(os.path.join(sub_folder_path, file_id)):
                 value = self.read_data(os.path.join(sub_folder_path, file_id))
                 hwmon_data[idx] = self.value_format(file_id, value)
 
         data[label_name] = hwmon_data
-
         return data
     
     def data(self):
+        """Collects and organizes sensor data."""
+        data = {}
 
-        data = dict()
-
-        folders = os.listdir(self.master_path)
-
-        for folder in folders:
-
-            name_key = None
-
+        for folder in os.listdir(self.master_path):
             sub_folder_path = os.path.join(self.master_path, folder)
 
-            files = os.listdir(sub_folder_path)
-
+            name_key = None
             if os.path.exists(os.path.join(sub_folder_path, 'name')):
                 name_key = self.read_data(os.path.join(sub_folder_path, 'name'))
 
-            symlink = os.readlink(os.path.join(sub_folder_path, 'device'))
-            symlink = symlink.strip().split("/")[-1]
+            symlink = os.readlink(os.path.join(sub_folder_path, 'device')).strip().split("/")[-1]
             sensor_name = f"{name_key}-{symlink}"
+            data[sensor_name] = {}
 
-            data[sensor_name] = dict()
-
-            for file_ in files:
-
-                try:
-
-                    if '_input' in file_:
+            for file_ in os.listdir(sub_folder_path):
+                if '_input' in file_ or '_average' in file_:
+                    try:
                         hwmon_data = self.extract_data(sub_folder_path, file_)
                         data[sensor_name].update(hwmon_data)
-
-                    if '_average' in file_:
-                        hwmon_data = self.extract_data(sub_folder_path, file_)
-                        data[sensor_name].update(hwmon_data)
-
-                except Exception:
-                    pass
+                    except Exception:
+                        pass
 
             # estimate_w = []
 
@@ -128,41 +103,38 @@ class Hwmon():
 
         return data
 
-    def print_data(self, colors=True):
-        print_dict(self.data(), indent=0, colors=colors)
-
     def compare_element(self, list_data):
-
+        """Compares elements in a list to check for status."""
         status = True
-
         if isinstance(list_data, list):
             for n in range(len(list_data)):
                 if list_data[n]:
-                    if n%2 == 0:
+                    if n % 2 == 0:
                         if float(list_data[0].split(" ")[0]) < float(list_data[n].split(" ")[0]):
                             status = False
                     else:
                         if float(list_data[0].split(" ")[0]) > float(list_data[n].split(" ")[0]):
                             status = False
-
         return status
 
     def print_data_format(self):
+        """Prints sensor data in a tabular format."""
+        ret = "\033[1;32mPASS\033[00m"
         TABLE_FLAG = "-----------+"
         dictionary = self.data()
-        print("+------------" + TABLE_FLAG * 7)
-        if isinstance(dictionary,dict):
-            for key in dictionary.keys():
+        print("+----------" + TABLE_FLAG * 7)
+        if isinstance(dictionary, dict):
+            for key in sorted(dictionary.keys()):
                 indent = 1
-                print("|", key.center(21), "|", "value".center(10), end="")
-                print( "|", "Max Value".center(9), "|", "Min Value".center(10), end="")
-                print( "|", "Crit Max".center(10), "|", end="")
-                print("Crit Min".center(9), "|", "Status".center(9), "|")
-                print("+------------" + TABLE_FLAG * 7)
-                status = "PASS"
+                print("|",key.center(19), "|", "value".center(10), end="")
+                print("|", "Max Value".center(9), "|", "Min Value".center(10), end="")
+                print("|", "Crit Max".center(9), "|", end="")
+                print("Crit Min".center(10), "|", "Status".center(9), "|")
+                print("+----------" + TABLE_FLAG * 7)
+                status = "\033[1;32mPASS\033[00m"
                 if isinstance(dictionary[key], dict):
                     for key_list in sorted(dictionary[key].keys()):
-                        print("|", key_list.center(22), end="")
+                        print("|", key_list.center(20), end="")
                         for n in range(5):
                             if dictionary[key][key_list][n]:
                                 print("|", dictionary[key][key_list][n].center(10), end="")
@@ -170,8 +142,10 @@ class Hwmon():
                                 print("|", "-".center(10), end="")
 
                         if not self.compare_element(dictionary[key][key_list]):
-                            status = "FAIL"
+                            status = "\033[1;31mFAIL\033[0m"
+                            ret = "\033[1;31mFAIL\033[0m"
 
-                        print("|", status.center(9), "|")
-                        
-                    print("+------------" + TABLE_FLAG * 7)
+                        print("|   ", status, "  |")
+
+                    print("+----------" + TABLE_FLAG * 7)
+        return ret
