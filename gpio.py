@@ -2,31 +2,33 @@
 
 import os
 import re
+from typing import Tuple
+
 from fboss_utils import execute_shell_cmd
 import i2cbus
 
 GPIO_SUCCESS = "success"
 GPIO_ERR_1 = "No fbiob GPIO device"
 GPIO_ERR_2 = "No device link in this path : /run/devmap/ {}"
-GPIO_ERR_3 = "please input high or low"
+GPIO_ERR_3 = "Please input 'high' or 'low'"
 GPIO_ERR_4 = "GPIO set failed"
 
 
-def detect_gpio_devmap_device():
-    """detect gpio udev"""
+def detect_gpio_devmap_device() -> str:
+    """Detect gpio udev."""
     stat, _ = get_gpiochipnumber()
     if not stat:
         return GPIO_ERR_1
 
-    gpio_udev = "/run/devmap/gpio/IOB_GPIO_CHIP_0"
+    gpio_udev = "/run/devmap/gpiochips/IOB_GPIO_CHIP_0"
     if not os.path.exists(gpio_udev):
         return GPIO_ERR_2.format("IOB_GPIO_CHIP_0")
 
     return GPIO_SUCCESS
 
 
-def get_gpiochipnumber():
-    """get gpio pin number"""
+def get_gpiochipnumber() -> Tuple[bool, str]:
+    """Get gpio pin number."""
     cmd = "gpiodetect"
     pattern = re.compile(r"fbiob_pci.gpiochip.0")
     stat, value = execute_shell_cmd(cmd)
@@ -37,16 +39,13 @@ def get_gpiochipnumber():
         result = pattern.findall(line)
         if result:
             gpiochip = line.split("[")[0]
-            break
+            return stat, gpiochip
 
-    if "result" not in dir():
-        return False, GPIO_ERR_1
-
-    return stat, gpiochip
+    return False, GPIO_ERR_1
 
 
-def set_gpio_output(gpiochip, pingnumber, write):
-    """get gpio pin direction"""
+def set_gpio_output(gpiochip: str, pinnumber: int, write: str) -> str:
+    """Set gpio pin direction."""
     if write == "high":
         value = 1
     elif write == "low":
@@ -54,7 +53,7 @@ def set_gpio_output(gpiochip, pingnumber, write):
     else:
         return GPIO_ERR_3
 
-    cmd = f"gpioset {gpiochip} {pingnumber}={value}"
+    cmd = f"gpioset {gpiochip} {pinnumber}={value}"
     stat, _ = execute_shell_cmd(cmd)
     if not stat:
         return GPIO_ERR_4
@@ -62,8 +61,8 @@ def set_gpio_output(gpiochip, pingnumber, write):
     return GPIO_SUCCESS
 
 
-def set_gpio_input(gpiochip, pinnum):
-    """set gpiochip pin direction as input"""
+def set_gpio_input(gpiochip: str, pinnum: int) -> str:
+    """Set gpiochip pin direction as input."""
     cmd = f"gpioget {gpiochip} {pinnum}"
     stat, _ = execute_shell_cmd(cmd)
     if not stat:
@@ -72,8 +71,8 @@ def set_gpio_input(gpiochip, pinnum):
     return GPIO_SUCCESS
 
 
-def check_gpio_direction(gpiochip, pinnum):
-    """check gpiochip pin directtion"""
+def check_gpio_direction(gpiochip: str, pinnum: int) -> str:
+    """Check gpiochip pin direction."""
     cmd = f"gpioinfo {gpiochip}"
     stat, value = execute_shell_cmd(cmd)
     if not stat:
@@ -82,8 +81,8 @@ def check_gpio_direction(gpiochip, pinnum):
     return value.splitlines()[pinnum + 1].split()[4]
 
 
-def check_set_gpio_output_success():
-    """test gpio control function"""
+def check_set_gpio_output_success() -> str:
+    """Test gpio control function."""
     bus_info = "/run/devmap/i2c-busses/IOB_I2C_BUS_6"
     if not os.path.exists(bus_info):
         return GPIO_ERR_2.format("IOB_I2C_BUS_6")
@@ -97,8 +96,8 @@ def check_set_gpio_output_success():
     return GPIO_SUCCESS
 
 
-def test_gpio_pin_direction(gpiochip, pinnum):
-    """test gpio pin setup and verify status"""
+def test_gpio_pin_direction(gpiochip: str, pinnum: int) -> Tuple[str, str]:
+    """Test gpio pin setup and verify status."""
     status = "FAIL"
     _direction = ""
     set_gpio_output(gpiochip, pinnum, "high")
@@ -109,8 +108,8 @@ def test_gpio_pin_direction(gpiochip, pinnum):
     return status, _direction
 
 
-def test_gpio(platform):
-    """test gpio function"""
+def test_gpio(platform: str = None) -> str:
+    """Test gpio function."""
     stat, gpiochip = get_gpiochipnumber()
     if not stat:
         return GPIO_ERR_1
@@ -119,7 +118,7 @@ def test_gpio(platform):
     if ret != GPIO_SUCCESS:
         return ret
 
-    if platform == "janga" or platform == "tahan":
+    if platform in ("janga", "tahan"):
         # pin 55 test
         ret = set_gpio_output(gpiochip, 55, "high")
         if ret != GPIO_SUCCESS:
@@ -134,16 +133,15 @@ def test_gpio(platform):
             return ret
 
     print(
-        "  GPIO CHIP | PIN ID | Default Directtion | Directtion Test | Status\n"
+        "  GPIO CHIP | PIN ID | Default Direction | Direction Test | Status\n"
         "-------------------------------------------------------------------------"
     )
-    default_direction = ""
     for i in range(72):
         default_direction = check_gpio_direction(gpiochip, i)
         status, direction = test_gpio_pin_direction(gpiochip, i)
         print(
             f'{"":2}{gpiochip:>5} {i:>5d}{"":5}{default_direction:>10s}'
-            + f'{"":15}{direction:>6}{"":8}{status.ljust(1)} \n',
+            + f'{"":14}{direction:>6}{"":8}{status.ljust(1)} \n',
             end="",
         )
         set_gpio_input(gpiochip, i)

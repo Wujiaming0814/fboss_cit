@@ -5,10 +5,9 @@ import argparse
 import os
 import sys
 from fboss import Fboss
-from argparse import RawTextHelpFormatter
-
 
 def arg_parser():
+    """Parses command-line arguments."""
 
     cit_description = """
     CIT supports running following classes of tests:
@@ -26,17 +25,13 @@ def arg_parser():
     Run tests that need to connect to BMC: python cit_runner.py --platform wedge100 --start-dir tests/ --external --bmc-host "NAME"
     Run real upgrade firmware external tests that connect to BMC: python cit_runner.py --platform wedge100 --run-tests "path" --upgrade --bmc-host "NAME" --firmware-opt-args="-f -v"
     Run single/test that need connect to BMC: python cit_runner.py --run-test "path" --external --host "NAME"
-
-    On BMC:
-    List tests : python cit_runner.py --platform wedge100 --list-tests
-    Run tests : python cit_runner.py --platform wedge100
-    Run single test/module : python cit_runner.py --run-test "path"
     """
 
     parser = argparse.ArgumentParser(
         prog="fboss_test",
         usage="%(prog)s [options]",
-        epilog=cit_description, formatter_class=argparse.RawTextHelpFormatter
+        epilog=cit_description,
+        formatter_class=argparse.RawTextHelpFormatter
     )
 
     parser.add_argument(
@@ -77,74 +72,96 @@ command list:
 
 
 class TestFboss(unittest.TestCase):
+    """Test suite for FBOSS functionality."""
 
     def setUp(self):
+        """Setup method for the test suite."""
         self.fboss = Fboss("./fboss_dvt.json")
 
     def test_iob_reset(self):
+        """Test IOB logic reset."""
         self.fboss.iob_logic_reset_active()
 
     def test_iob_uptime(self):
+        """Test IOB uptime."""
         self.fboss.iob_up_time_test(5)
 
     def test_iob_general(self):
+        """Test IOB general register data."""
         self.fboss.iob_reg_raw_data_show()
 
     def test_iob_scatch(self):
-        stat = self.fboss.iob_scratch_pad()
+        """Test IOB scratch pad."""
+        self.fboss.iob_scratch_pad()
 
     def test_iob_version(self):
+        """Test IOB version information."""
         self.fboss.show_version_info()
 
     def test_iob_info(self):
+        """Test IOB FPGA information."""
         self.fboss.show_fpga_info()
 
     def test_spi_udev(self):
-        status = self.fboss.spi_bus_udev_test()
+        """Test SPI bus udev."""
+        self.fboss.spi_bus_udev_test()
 
     def test_spi_detect(self):
+        """Test SPI device detection."""
         self.fboss.detect_spi_device()
 
     def test_i2c_udev(self):
-        status = self.fboss.detect_i2c_drv_udev()
+        """Test I2C driver udev."""
+        self.fboss.detect_i2c_drv_udev()
 
     def test_i2c_detect(self):
+        """Test I2C bus detection."""
         self.fboss.detect_iob_i2c_buses()
         self.fboss.detect_doms_i2c_buses()
 
     def test_i2c_buses(self):
+        """Test I2C device detection."""
         self.fboss.detect_i2c_devices()
 
     def test_gpio(self):
+        """Test GPIO chip."""
         self.fboss.gpio_chip_test()
 
     def test_port_led(self):
+        """Test port LED status."""
         self.fboss.port_led_status_test()
 
     def test_loop_leds(self):
+        """Test port LED loop."""
         self.fboss.port_led_loop_test()
 
     def test_xcvrs(self):
+        """Test XCVRs."""
         self.fboss.fboss_xcvr_test()
 
     def test_sensors(self):
+        """Test sensors."""
         self.fboss.fboss_sensor_test()
         self.fboss.fboss_end_flag_test()
 
     def test_hwmon(self):
-         self.fboss.fboss_hwmon_test()
+        """Test HWMON."""
+        self.fboss.fboss_hwmon_test()
 
     def test_firmware_upgrade(self):
+        """Test firmware upgrade."""
         self.fboss.fboss_firmware_test()
 
 
 if __name__ == "__main__":
-    #unittest.main(verbosity=2)
+    # Parse command-line arguments
     args = arg_parser()
 
+    # Construct the command based on the chosen command
     if args.cmd == "all":
         cmd = f"python -m unittest runner.TestFboss"
     else:
         cmd = f"python -m unittest runner.TestFboss.test_{args.cmd}"
 
+    # Execute the command
     os.system(cmd)

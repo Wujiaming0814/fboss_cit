@@ -122,22 +122,21 @@ class Hwmon():
         ret = "\033[1;32mPASS\033[00m"
         TABLE_FLAG = "-----------+"
         dictionary = self.data()
-        print("+----------" + TABLE_FLAG * 7)
+        print("+--------" + TABLE_FLAG * 7)
         if isinstance(dictionary, dict):
             for key in sorted(dictionary.keys()):
                 indent = 1
-                print("|",key.center(19), "|", "value".center(10), end="")
-                print("|", "Max Value".center(9), "|", "Min Value".center(10), end="")
-                print("|", "Crit Max".center(9), "|", end="")
-                print("Crit Min".center(10), "|", "Status".center(9), "|")
-                print("+----------" + TABLE_FLAG * 7)
                 status = "\033[1;32mPASS\033[00m"
+                print("|" + f"{key:^19}", end="")
+                print("|   Value   | Max Value | Min Value | Crit Max  | Crit Min  |  Status   |")
+                print("+--------" + TABLE_FLAG * 7)
+                
                 if isinstance(dictionary[key], dict):
                     for key_list in sorted(dictionary[key].keys()):
-                        print("|", key_list.center(20), end="")
+                        print("|", f"{key_list:^18}", end="")
                         for n in range(5):
                             if dictionary[key][key_list][n]:
-                                print("|", dictionary[key][key_list][n].center(10), end="")
+                                print("|", f"{dictionary[key][key_list][n]:^10}", end="")
                             else:
                                 print("|", "-".center(10), end="")
 
@@ -147,5 +146,5 @@ class Hwmon():
 
                         print("|   ", status, "  |")
 
-                    print("+----------" + TABLE_FLAG * 7)
+                    print("+--------" + TABLE_FLAG * 7)
         return ret

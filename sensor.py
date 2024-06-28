@@ -3,21 +3,22 @@ from fboss_utils import *
 import fboss
 from hwmon import Hwmon
 
-SERNSOR_SUCCESS = "success"
+# Define constants for sensor status and error messages
+SENSOR_SUCCESS = "success"
 SENSOR_ERR_1 = "name is NULL"
 SENSOR_ERR_2 = "physical channel is NULL"
-SENSOR_ERR_3 = "No device link in this path:/run/devmap/sensors [{}]"
-SENSOR_ERR_4 = "ERROR platform, plese check:[{}]"
-SENSOR_ERR_5 = "ERROR EVT VERSION, plese check:[{}]"
-SENSOR_ERR_6 = "chip id is NULL "
-SENSOR_ERR_7 = "not match:[{}]"
+SENSOR_ERR_3 = "No device link in this path: /run/devmap/sensors [{}]"
+SENSOR_ERR_4 = "ERROR platform, please check: [{}]"
+SENSOR_ERR_5 = "ERROR EVT VERSION, please check: [{}]"
+SENSOR_ERR_6 = "chip id is NULL"
+SENSOR_ERR_7 = "not match: [{}]"
 SENSOR_ERR_8 = "data NULL"
-SENSOR_ERR_9 = "chip id not match:[{}] [{}]"
-SENSOR_ERR_10 = "NOT find [{}] link file, udev mappingg or driver error"
+SENSOR_ERR_9 = "chip id not match: [{}] [{}]"
+SENSOR_ERR_10 = "NOT find [{}] link file, udev mapping or driver error"
 
+# Define paths and constants
 HWMON_PATH = "/sys/class/hwmon/"
 TABLE_FLAG = "-----+-----+-----+-----+"
-
 SKIP = "SMB_U19_LM75B_1"
 
 TAHAN_SENSOR = [

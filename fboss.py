@@ -18,6 +18,7 @@ import sensor
 import i2cbus
 from spibus import SPIBUS
 
+# Define constants for IOB registers
 IOB_REGS = {
     "Revision": 0x00,
     "Scratch_Pad": 0x04,
@@ -33,20 +34,27 @@ IOB_REGS = {
     "DOM2 Revision": 0x48000,
 }
 
+# Define constant for IOB UP_TIME register
 FBIOB_REG_UP_TIME = 0x14
 
+# Define color codes for output formatting
 FMT_RED = "\033[31m{}\033[0m"
 FMT_GRN = "\033[32m{}\033[0m"
 
+# Define IOB device ID and paths
 IOB_DEV_ID = "1d9b:0011"
 DEV_PATH = "/sys/bus/auxiliary/devices/"
 BDF_PATH = "/sys/bus/pci/devices/0000:{}/"
 
+# Define SPI device names for different platforms
 MONTBLANC_SPI_DEV = ("iob", "dom1", "dom2", "i210", "scm", "smb", "mcb", "th5")
 TAHAN_SPI_DEV = ("iob", "dom", "i210", "smb_1", "smb_2", "pwr", "th5")
 JANGA_SPI_DEV = ("iob", "dom", "i210", "smb_1", "smb_2", "pwr", "j3a", "j3b")
+
+# Define project stage names
 PROJECT_STAGE = ("EVT1", "EVT2", "EVT3", "DVT1", "DVT2", "PVT", "MP", "TBD")
 
+# Define I2C bus and address constants
 I2C_BUS_SMBCPLD1 = "IOB_I2C_BUS_3"
 I2C_ADDR_SMBCPLD1 = 0x35
 I2C_BUS_SMBCPLD2 = "IOB_I2C_BUS_10"
@@ -63,16 +71,17 @@ I2C_ADDR_MCBCPLD = 0x33
 
 
 def platform_data_parse(config_file):
-    # open JSON file
+    """Parses platform data from a JSON configuration file."""
+    # Open JSON file
     with open(config_file, "r", encoding="utf-8") as fd:
-        # returns JSON object as a dictionary
+        # Returns JSON object as a dictionary
         platform_data = json.load(fd)
 
     return platform_data
 
 
 def get_board_id(platformDict) -> str:
-    """Get the current board type"""
+    """Gets the current board type."""
     platform = "NA"
     path_file = "fbiob_pci.fpga_info_iob.0/board_id"
     devfile = f"{DEV_PATH}{path_file}"
@@ -84,7 +93,7 @@ def get_board_id(platformDict) -> str:
 
 
 def get_board_revision():
-    """Get the current board type"""
+    """Gets the current board revision."""
     board_rev = "NA"
     path_file = "fbiob_pci.fpga_info_iob.0/board_rev"
     devfile = f"{DEV_PATH}{path_file}"
@@ -96,15 +105,17 @@ def get_board_revision():
 
 
 def get_fpga_path():
+    """Gets the FPGA path based on its PCI BDF."""
     fpga_bdf = get_pci_bdf_info(IOB_DEV_ID)
 
     return f"{BDF_PATH}".format(fpga_bdf)
 
 
 class Fboss:
-    """fboss class"""
+    """Represents the Fboss platform."""
 
     def __init__(self, config_file):
+        """Initializes the Fboss object."""
         self.platform_data = platform_data_parse(config_file)
         self.fpga_path = get_fpga_path()
         self._platform = get_board_id(self.platform_data["platformName"])
@@ -113,7 +124,7 @@ class Fboss:
         self.spibus = SPIBUS(self.SPI_DICT, self.fpga_path)
 
     def _fpga_io_operation(self, reg: hex, val=None):
-        """fpga io operate funtion"""
+        """Performs FPGA I/O operations."""
         bdf_fd = f"{self.fpga_path}resource0"
 
         try:
@@ -145,6 +156,7 @@ class Fboss:
             raise
 
     def _execute_i2cget(self, bus: int, addr: int, reg: int) -> tuple[bool, list[int]]:
+        """Executes an I2C get command."""
         i2cget_cmd = f"i2cget -y -f {bus} {addr:#4x} {reg:#4x}"
         stat, res = execute_shell_cmd(i2cget_cmd)
         if not stat:
@@ -153,10 +165,11 @@ class Fboss:
         return True, [int(i, 16) for i in res.split()]
 
     def gen_random_hex_string(self, size):
-        """generate random string"""
+        """Generates a random hexadecimal string."""
         return "".join(random.choices(string.hexdigits, k=size))
 
     def iob_logic_reset_active(self):
+        """Activates the IOB logic reset and checks the Scratch Pad register."""
         print(
             "-------------------------------------------------------------------------\n"
             "               | IOB Logic Reset Activation Operation |\n"
@@ -167,9 +180,10 @@ class Fboss:
         self._fpga_io_operation(0x20, "0x1")
         end = self._fpga_io_operation(4)
         print(f"Read Scratch Pad register(After write random value): [{end}]")
-        return f'{"PASS" if end==0 else "FAIL"}'
+        return f'{"PASS" if end == 0 else "FAIL"}'
 
     def iob_scratch_pad(self):
+        """Tests the IOB Scratch Pad register."""
         print(
             "-------------------------------------------------------------------------\n"
             "                       | IOB Scratch Pad test |\n"
@@ -181,13 +195,16 @@ class Fboss:
         temp_val = bytes.fromhex(random_val)
         temp_val = temp_val[::-1]
         temp_val = hex(int.from_bytes(temp_val, "big"))[2:]
-        print(f"Generate one random data: [{temp_val}] write to Scratch Pad register")
+        print(
+            f"Generate one random data: [{temp_val}] write to Scratch Pad register"
+        )
         self._fpga_io_operation(4, random_val)
         end = self._fpga_io_operation(4)
         print(f"Read Scratch Pad register(After write random value): [{end}]")
-        return f'{"PASS" if end==temp_val else "FAIL"}'
+        return f'{"PASS" if end == temp_val else "FAIL"}'
 
     def iob_reg_raw_data_show(self):
+        """Displays raw data from IOB general registers."""
         print(
             "-------------------------------------------------------------------------\n"
             "               | IOB General register information |\n"
@@ -202,8 +219,12 @@ class Fboss:
                 f'{"":>5}{n:<20s}{"":>6}{hex(reg):<7}{"":>14}' f"0x{regval:<10} \n",
                 end="",
             )
+        print(
+            "-------------------------------------------------------------------------\n"
+        )
 
     def iob_xadc_test(self):
+        """Tests the IOB XADC registers."""
         IOB_XADC = self.platform_data["iobXADCRegisters"]
         print(
             "-------------------------------------------------------------------------\n"
@@ -227,12 +248,14 @@ class Fboss:
             print(
                 f'{"":>3}{xadc:9s}{reg}{"":>6}{"{:.2f}".format(temp):<5}{"":>7}'
                 f'{"{:.2f}".format(vccint):<5}{"":>8}{"{:.2f}".format(vccaux):<5}'
-                f'{"":>8}{"{:.2f}".format(vccbram):<5} \n',
-                end="",
+                f'{"":>8}{"{:.2f}".format(vccbram):<5}'
             )
+        print(
+            "-------------------------------------------------------------------------\n"
+        )
 
     def iob_up_time_test(self, sleep_time: int = None):
-        """uptime function test"""
+        """Tests the IOB UP_TIME register."""
         start = self._fpga_io_operation(FBIOB_REG_UP_TIME)
         if sleep_time:
             stat = FMT_GRN.format("PASS")
@@ -247,10 +270,12 @@ class Fboss:
             end = self._fpga_io_operation(FBIOB_REG_UP_TIME)
             stat = f'{FMT_GRN.format("PASS") if sleep_time==(int(end, 16) - int(start, 16)) else FMT_RED.format("FAIL")}'
             print(
-                f'{"":3}{int(start, 16)}{"":>15}{sleep_time:<5}{"":>7}'
-                f'{int(end, 16):<5}{"":>12}{int(end, 16) - int(start, 16):<5}{"":>5}'
-                f"{stat:<5} \n",
-                end="",
+                f'{"":5}{int(start, 16)}{"":>12}{sleep_time:<5}{"":>8}'
+                f'{int(end, 16):<5}{"":>12}{int(end, 16) - int(start, 16):<5}{"":>6}'
+                f"{stat:<5}"
+            )
+            print(
+                "-------------------------------------------------------------------------\n"
             )
             return start, end
         print(
@@ -259,20 +284,21 @@ class Fboss:
         return start
 
     def temp_operators(self, reg_val: hex):
-        """iob adc temperature calculate"""
-        # bitwise operators
+        """Calculates temperature from XADC register value."""
+        # Bitwise operators
         bits_val = (reg_val & 0xFFF0) >> 4
         temp = (bits_val * 503.975) / 4096 - 273.15
         return temp
 
     def vcc_operators(self, reg_val: hex):
-        """iob adc vcc calculate"""
-        # bitwise operators
+        """Calculates VCC voltage from XADC register value."""
+        # Bitwise operators
         bits_val = (reg_val & 0xFFF0) >> 4
         vcc = (bits_val / 4096) * 3
         return vcc
 
     def _show_iob_dev_info(self) -> str:
+        """Gets and formats IOB device information."""
         path_file = "fbiob_pci.fpga_info_iob.0/device_id"
         iob_device_id = read_sysfile_value(f"{DEV_PATH}{path_file}")
         path_file = "fbiob_pci.fpga_info_iob.0/fpga_ver"
@@ -492,6 +518,7 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
         if self._platform == "montblanc":
             print(self._show_dom2_dev_info())
         self.iob_xadc_test()
+        
 
     def detect_i2c_drv_udev(self):
         """i2c controller driver and udev test"""
@@ -549,7 +576,7 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
         )
         for dev in devs:
             res = self.spibus.spi_scan(dev)
-            print(f'{"PASS" if res else "FAIL":>6s} ')
+            print(f'{"PASS" if res else "FAILED":>6s} ')
             err_cnt += 1 if not res else 0
 
         return err_cnt, f"Scanned {len(devs)} spi devices, {err_cnt} failed."
@@ -563,11 +590,13 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
         """spi master udev test functon"""
         print(
             "-------------------------------------------------------------------------\n"
-            " Master Bus |  SPI BUS  |   spidev   |     SPI UDEV     |  Status\n"
+            " Master ID  |  SPI BUS  |   spidev    |       SPI UDEV       |  Status\n"
             "-------------------------------------------------------------------------"
         )
         stat, status = self.spibus.spi_master_detect()
-
+        print(
+            "-------------------------------------------------------------------------\n"
+        )
         return f'{"PASS" if stat else status}'
 
     def gpio_chip_test(self):
@@ -656,12 +685,19 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
         for bus_name in dev_map.keys():
             i2cbus.detect_i2c_devices(bus_name)
 
-        print("------------------------DOM I2C buses Detect---------------------------")
+        print(
+            "-------------------------------------------------------------------------\n"
+            "                           DOM I2C buses Detect\n"
+            "-------------------------------------------------------------------------"
+        )
         max_bus = self.platform_data["i2cDeviceConfigs"].get("iobBusCount")
         i2cDeviceInfo = f"{self._platform}_i2c_bus_map"
         for n in range(max_bus):
             bus_name = f"XCVR_{n + 1}"
             i2cbus.detect_i2c_devices(bus_name)
+        print(
+            "-------------------------------------------------------------------------\n"
+        )
 
     def fboss_end_flag_test(self):
         """fboss end test flag"""

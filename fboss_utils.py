@@ -4,6 +4,7 @@
 import subprocess
 import pathlib
 import os
+import sys, time
 from typing import Tuple, Optional
 
 # Constants for clarity
@@ -144,6 +145,29 @@ def select_dom1() -> None:
     gpiocmd = "gpioset gpiochip0 9=1"
     os.system(gpiocmd)
 
+def progress_bar(total, prefix='', suffix='', decimals=1, length=100, fill='█', print_end="\r"):
+    """
+    Displays a progress bar with customizable options.
+
+    Args:
+        total: Total iterations or units to process.
+        prefix: Text to display before the progress bar.
+        suffix: Text to display after the progress bar.
+        decimals: Number of decimal places for the percentage.
+        length: Length of the progress bar in characters.
+        fill: Character used to fill the progress bar.
+        print_end: Character to print at the end of the progress bar (e.g., '\r' for carriage return).
+    """
+    
+    start_time = time.perf_counter()
+    for i in range(total + 1):
+        percent = ("{0:." + str(decimals) + "f}").format(100 * (i / float(total)))
+        filled_length = int(length * i // total)
+        bar = fill * filled_length + '-' * (length - filled_length)
+        elapsed_time = time.perf_counter() - start_time
+        
+        print("\n", f"{prefix}|{bar}| {percent}% {suffix} {elapsed_time:.2f}s", end=print_end)
+        time.sleep(0.05)
 
 def firmware_upgrade() -> None:
     """Prompts the user for component and firmware file, then performs the upgrade."""
@@ -169,15 +193,30 @@ def firmware_upgrade() -> None:
         print("\nError: Firmware file not exist!\n")
         return
 
+    # show image md5 or check image file md5
+    status, stdout = execute_shell_cmd(f"md5sum {fwimg}")
+    if not status:
+        print("Not support md5sum utilty.")
+    for line in stdout.splitlines():
+        img_md5 = line.split()[0]
+
+    md5_file = f"{fwimg}.md5"
+    if pathlib.Path(md5_file).exists():
+        read_md5 = read_sysfile_value(md5_file).split()[0]
+        if read_md5 != img_md5:
+            input("Image md5sum incorrect! Continue upgrade?[Yes/No]")
+    
+    print("\nFirmware Image MD5:", img_md5, "\n")
+    # switch mux to select flash device and upgrade
     select_gpiocmd = f"gpioset gpiochip0 {gpionum}=1" if gpionum else ""
     release_gpiocmd = f"gpioget gpiochip0 {gpionum}" if gpionum else ""
     flash_devmap = f"/run/devmap/flashes/{devname.upper()}_FLASH"
     upgrade_cmd = f"flashrom -p linux_spi:dev={os.readlink(flash_devmap)} -w {fwimg} -c {chipname}"
-    print(upgrade_cmd)
+    print(upgrade_cmd, "\n\nStarting firmware upgrade...\n")
+    progress_bar(1, prefix='Progress:', suffix='Complete', length=50)
 
     if select_gpiocmd:
         os.system(select_gpiocmd)
     os.system(upgrade_cmd)
     if release_gpiocmd:
         os.system(release_gpiocmd)
-
