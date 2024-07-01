@@ -145,7 +145,7 @@ def sensors_folder_list():
         name = get_device_name(item_path)
 
 def check_sensor_physical_channel(name, chip_id, channel):
-    status = SERNSOR_SUCCESS
+    status = SENSOR_SUCCESS
     busid = -1
     if name == "":
         return SENSOR_ERR_1, busid
@@ -207,7 +207,7 @@ def get_sensor_data(udev_link, device1, device2):
     if not val2:
         return (SENSOR_ERR_8, val1, val2)
 
-    return (SERNSOR_SUCCESS, val1, val2)
+    return (SENSOR_SUCCESS, val1, val2)
 
 
 def sensor_test(platform):
@@ -248,11 +248,11 @@ def sensor_test(platform):
                 continue
 
         ret, bus_info = check_sensor_physical_channel(udev_link, chip_id, info)
-        if ret != SERNSOR_SUCCESS:
+        if ret != SENSOR_SUCCESS:
             status = "\033[31mFAIL\033[0m\t" + f"{ret}"
 
         ret, data1, data2 = get_sensor_data(udev_link, device1, device2)
-        if ret != SERNSOR_SUCCESS:
+        if ret != SENSOR_SUCCESS:
             status = "\033[31mFAIL\033[0m\t" + f"{ret}"
 
         print(
