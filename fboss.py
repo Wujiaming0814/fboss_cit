@@ -187,21 +187,23 @@ class Fboss:
         print(
             "-------------------------------------------------------------------------\n"
             "                       | IOB Scratch Pad test |\n"
+            "-------------------------------------------------------------------------\n"
+            " Scratch Original Value |  Random Value  | Scratch New Value | Status\n"
             "-------------------------------------------------------------------------"
         )
         start = self._fpga_io_operation(4)
-        print(f"Read Scratch Pad register(Before write random value): [{start}]")
         random_val = self.gen_random_hex_string(8)
         temp_val = bytes.fromhex(random_val)
         temp_val = temp_val[::-1]
         temp_val = hex(int.from_bytes(temp_val, "big"))[2:]
-        print(
-            f"Generate one random data: [{temp_val}] write to Scratch Pad register"
-        )
         self._fpga_io_operation(4, random_val)
         end = self._fpga_io_operation(4)
-        print(f"Read Scratch Pad register(After write random value): [{end}]")
-        return f'{"PASS" if end == temp_val else "FAIL"}'
+        status = f'{"PASS" if int(end,16) == int(temp_val,16) else "FAIL"}'
+        print(f'{"":>6}0x{start:<16}{"|"}{"":>3}0x{temp_val:<7}{"":>3}{"|"}{"":>4}0x{end:<10}{"":>3}{"|"}{"":>2}{status}')
+        print(
+            "-------------------------------------------------------------------------\n"
+        )
+        return status
 
     def iob_reg_raw_data_show(self):
         """Displays raw data from IOB general registers."""
@@ -218,37 +220,6 @@ class Fboss:
             print(
                 f'{"":>5}{n:<20s}{"":>6}{hex(reg):<7}{"":>14}' f"0x{regval:<10} \n",
                 end="",
-            )
-        print(
-            "-------------------------------------------------------------------------\n"
-        )
-
-    def iob_xadc_test(self):
-        """Tests the IOB XADC registers."""
-        IOB_XADC = self.platform_data["iobXADCRegisters"]
-        print(
-            "-------------------------------------------------------------------------\n"
-            "                    | XADC register information |\n"
-            "-------------------------------------------------------------------------\n"
-            "   XADC  |   Reg   |   Temp   |   VCCINT   |   VCCAUX   |   VCCBRAM\n"
-            "-------------------------------------------------------------------------"
-        )
-        for xadc in IOB_XADC.keys():
-            reg = IOB_XADC.get(xadc)
-            regval = self._fpga_io_operation(int(reg, 16))
-            temp = self.temp_operators(int(regval, 16))
-            regval = self._fpga_io_operation(int(reg, 16) + 0x4)
-            vccint = self.vcc_operators(int(regval, 16))
-            regval = self._fpga_io_operation(int(reg, 16) + 0x8)
-            vccaux = self.vcc_operators(int(regval, 16))
-            if reg == 0x200:
-                reg = 0x20C
-            regval = self._fpga_io_operation(int(reg, 16) + 0xC)
-            vccbram = self.vcc_operators(int(regval, 16))
-            print(
-                f'{"":>3}{xadc:9s}{reg}{"":>6}{"{:.2f}".format(temp):<5}{"":>7}'
-                f'{"{:.2f}".format(vccint):<5}{"":>8}{"{:.2f}".format(vccaux):<5}'
-                f'{"":>8}{"{:.2f}".format(vccbram):<5}'
             )
         print(
             "-------------------------------------------------------------------------\n"
@@ -282,20 +253,6 @@ class Fboss:
             f"IOB FPGA Up time register value: {start} up time: {int(start, 16)}s(encod)\n"
         )
         return start
-
-    def temp_operators(self, reg_val: hex):
-        """Calculates temperature from XADC register value."""
-        # Bitwise operators
-        bits_val = (reg_val & 0xFFF0) >> 4
-        temp = (bits_val * 503.975) / 4096 - 273.15
-        return temp
-
-    def vcc_operators(self, reg_val: hex):
-        """Calculates VCC voltage from XADC register value."""
-        # Bitwise operators
-        bits_val = (reg_val & 0xFFF0) >> 4
-        vcc = (bits_val / 4096) * 3
-        return vcc
 
     def _show_iob_dev_info(self) -> str:
         """Gets and formats IOB device information."""
@@ -516,9 +473,7 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
         print(self._show_iob_dev_info())
         print(self._show_dom1_dev_info())
         if self._platform == "montblanc":
-            print(self._show_dom2_dev_info())
-        self.iob_xadc_test()
-        
+            print(self._show_dom2_dev_info())       
 
     def detect_i2c_drv_udev(self):
         """i2c controller driver and udev test"""

@@ -5,6 +5,7 @@ import argparse
 import os
 import sys
 from fboss import Fboss
+from xadc import test_iob_xadc
 
 def arg_parser():
     """Parses command-line arguments."""
@@ -101,6 +102,10 @@ class TestFboss(unittest.TestCase):
     def test_iob_info(self):
         """Test IOB FPGA information."""
         self.fboss.show_fpga_info()
+
+    def test_iob_xadc(self):
+        """Tests the IOB XADC registers."""
+        test_iob_xadc()
 
     def test_spi_udev(self):
         """Test SPI bus udev."""
