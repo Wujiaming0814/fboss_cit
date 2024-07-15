@@ -25,7 +25,8 @@ MV_8BIT = 2**8
 MV_16BIT = 2**16
 
 # Device path format
-DEVPATH = "/sys/bus/auxiliary/devices/fbiob_pci.iob_i2c_master.{}/"
+IOB_PCI_DRIVER="fbiob_pci"
+DEVPATH = "/sys/bus/auxiliary/devices/{}.iob_i2c_master.{}/"
 
 def read_energy_data(bus_id, raw_data=False):
     """Reads energy data from an I2C device.
@@ -43,7 +44,7 @@ def read_energy_data(bus_id, raw_data=False):
     with SMBus(bus_id, force=True) as bus:
         block = bus.read_i2c_block_data(DEV_ADDR, READ_EIN, BLK_SIZE, force=True)
         if raw_data:
-            print("Raw data: ", " ".join(f"{hex(b)}" for b in block))
+            print("Raw data: ", " ".join(f"\033[1;33m{hex(b)}\033[0m" for b in block))
 
         # Extract data from the block
         accumulator_value = block[1] + block[2] * MV_8BIT
@@ -120,6 +121,7 @@ def pmbus_show_average_energy(busid, rval, delay_time):
     Returns:
         The average power as a float, or None if no change in energy count or an error occurs.
     """
+    max_energy_count = calculate_energy_count(0xffff, 0xff, rval)
     current_timestamp = time()
     print(f"First time read at: {current_timestamp}")
     last_accumulator_value, last_rollover, last_sample_count = read_energy_data(busid, raw_data=True)
@@ -139,7 +141,7 @@ def pmbus_show_average_energy(busid, rval, delay_time):
 
     energy_count_diff = energy_count - last_energy_count
     if energy_count_diff < 0:
-        energy_count_diff += (1 << 32)
+        energy_count_diff += max_energy_count
 
     sample_count_diff = sample_count - last_sample_count
     if sample_count_diff < 0:
@@ -155,7 +157,7 @@ def read_all_device_energy():
 
     # Iterate through potential I2C bus IDs
     for n in range(18, 26):
-        bus_path = DEVPATH.format(n)
+        bus_path = DEVPATH.format(IOB_PCI_DRIVER, n)
 
         # Get the I2C bus ID from the directory
         busid = get_i2c_bus(bus_path)
@@ -169,14 +171,14 @@ def read_all_device_energy():
         # Calculate and print accumulated energy
         accumulation_energy = pmbus_show_accumulation_energy(busid, rval)
         if accumulation_energy is not None:
-            print(f"Accumulated energy on bus {busid}: \033[1;32m{accumulation_energy}\033[0m")
+            print(f"Accumulated energy on bus {busid}: [\033[1;34m{accumulation_energy}\033[0m]")
         else:
             print(f"Error reading accumulated energy on bus {busid}")
 
         # Calculate and print average energy
         average_energy = pmbus_show_average_energy(busid, rval, 5)
         if average_energy is not None:
-            print(f"Average energy on bus {busid}: \033[1;33m{average_energy}\033[0m")
+            print(f"Average energy on bus {busid}: [\033[1;32m{average_energy}\033[0m]")
         else:
             print(f"Error reading average energy on bus {busid}")
         print()
