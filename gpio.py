@@ -4,8 +4,11 @@ import os
 import re
 from typing import Tuple
 
-from fboss_utils import execute_shell_cmd
+from fboss_utils import execute_shell_cmd, get_platform
 import i2cbus
+
+IOB_PCI_DRIVER = "fbiob_pci"
+GPIO_CHIP_NAME = "IOB_GPIO_CHIP_0"
 
 GPIO_SUCCESS = "success"
 GPIO_ERR_1 = "No fbiob GPIO device"
@@ -20,9 +23,9 @@ def detect_gpio_devmap_device() -> str:
     if not stat:
         return GPIO_ERR_1
 
-    gpio_udev = "/run/devmap/gpiochips/IOB_GPIO_CHIP_0"
+    gpio_udev = f"/run/devmap/gpiochips/{GPIO_CHIP_NAME}"
     if not os.path.exists(gpio_udev):
-        return GPIO_ERR_2.format("IOB_GPIO_CHIP_0")
+        return GPIO_ERR_2.format(GPIO_CHIP_NAME)
 
     return GPIO_SUCCESS
 
@@ -30,7 +33,8 @@ def detect_gpio_devmap_device() -> str:
 def get_gpiochipnumber() -> Tuple[bool, str]:
     """Get gpio pin number."""
     cmd = "gpiodetect"
-    pattern = re.compile(r"fbiob_pci.gpiochip.0")
+    gpio_dev = f"{IOB_PCI_DRIVER}.gpiochip.0"
+    pattern = re.compile(gpio_dev)
     stat, value = execute_shell_cmd(cmd)
     if not stat:
         return stat, GPIO_ERR_1
@@ -46,9 +50,9 @@ def get_gpiochipnumber() -> Tuple[bool, str]:
 
 def set_gpio_output(gpiochip: str, pinnumber: int, write: str) -> str:
     """Set gpio pin direction."""
-    if write == "high":
+    if write.lower() == "high":
         value = 1
-    elif write == "low":
+    elif write.lower() == "low":
         value = 0
     else:
         return GPIO_ERR_3
@@ -78,7 +82,11 @@ def check_gpio_direction(gpiochip: str, pinnum: int) -> str:
     if not stat:
         return GPIO_ERR_1
 
-    return value.splitlines()[pinnum + 1].split()[4]
+    lines = value.splitlines()
+    if len(lines) > pinnum + 1:
+        return lines[pinnum + 1].split()[4]
+    else:
+        return "Unknown"
 
 
 def check_set_gpio_output_success() -> str:
@@ -149,5 +157,17 @@ def test_gpio(platform: str = None) -> str:
     return GPIO_SUCCESS
 
 
+def gpio_chip_test():
+    """gpio test functon"""
+    print(
+        "-------------------------------------------------------------------------\n"
+        "                   |     GPIO Controller Test     |\n"
+        "-------------------------------------------------------------------------"
+    )
+    platform = get_platform()
+    stat = test_gpio(platform)
+    return f'{"PASS" if stat != "success" else stat}'
+
+
 if __name__ == "__main__":
-    test_gpio()
+    gpio_chip_test()

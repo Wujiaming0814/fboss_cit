@@ -8,6 +8,8 @@ from typing import Dict, List, Tuple
 
 from fboss_utils import execute_shell_cmd
 
+IOB_PCI_DRIVER="fbiob_pci"
+
 DEVMAP_SPI = "/run/devmap/flashes/"
 SPI_VENDOR_PATTERN = re.compile(r"vendor=\"([\w\d]+)\"\sname=\"([\w\d.]+)\"")
 
@@ -83,7 +85,7 @@ class SPIBUS:
         for busid in range(8):
             errcode, status = True, "PASS"
             dev_path = f"/sys/bus/spi/devices/spi{busid}.0"
-            master_path = f"{self._fpga_path}fbiob_pci.spi_master.{busid}"
+            master_path = f"{self._fpga_path}{IOB_PCI_DRIVER}.spi_master.{busid}"
 
             if pathlib.Path(dev_path).exists() and pathlib.Path(master_path).exists():
                 cmd_str = f"basename {dev_path}"

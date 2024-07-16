@@ -2,6 +2,8 @@ import os
 from fboss_utils import execute_shell_cmd, read_sysfile_value
 from typing import Dict, List, Tuple
 
+IOB_PCI_DRIVER="fbiob_pci"
+
 # Constants
 DEVMAP_I2C = "/run/devmap/i2c-busses/"
 I2C_DRV = "/sys/class/i2c-adapter/"
@@ -53,7 +55,7 @@ def check_drv_udev_status() -> Tuple[bool, str]:
     for i2cdev in devs_list:
         masterid = i2cinfo = udev_info = master_info = "NA"
         stat = True
-        dev_info = f"fbiob_pci.{i2cdev[0]}.{i2cdev[1]}"
+        dev_info = f"{IOB_PCI_DRIVER}.{i2cdev[0]}.{i2cdev[1]}"
 
         for i2cinfo in i2c_dev_list:
             if not os.path.islink(f"{I2C_DRV}{i2cinfo}"):

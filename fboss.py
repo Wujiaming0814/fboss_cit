@@ -11,12 +11,10 @@ import json
 from time import sleep
 from datetime import timedelta
 from fboss_utils import *
-import gpio
-import xcvr
-import leds
-import sensor
 import i2cbus
 from spibus import SPIBUS
+
+IOB_PCI_DRIVER="fbiob_pci"
 
 # Define constants for IOB registers
 IOB_REGS = {
@@ -83,7 +81,7 @@ def platform_data_parse(config_file):
 def get_board_id(platformDict) -> str:
     """Gets the current board type."""
     platform = "NA"
-    path_file = "fbiob_pci.fpga_info_iob.0/board_id"
+    path_file = f"{IOB_PCI_DRIVER}.fpga_info_iob.0/board_id"
     devfile = f"{DEV_PATH}{path_file}"
     board_id = read_sysfile_value(devfile)
     if board_id:
@@ -95,7 +93,7 @@ def get_board_id(platformDict) -> str:
 def get_board_revision():
     """Gets the current board revision."""
     board_rev = "NA"
-    path_file = "fbiob_pci.fpga_info_iob.0/board_rev"
+    path_file = f"{IOB_PCI_DRIVER}.fpga_info_iob.0/board_rev"
     devfile = f"{DEV_PATH}{path_file}"
     board_rev = read_sysfile_value(devfile)
     if board_rev:
@@ -256,13 +254,13 @@ class Fboss:
 
     def _show_iob_dev_info(self) -> str:
         """Gets and formats IOB device information."""
-        path_file = "fbiob_pci.fpga_info_iob.0/device_id"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_iob.0/device_id"
         iob_device_id = read_sysfile_value(f"{DEV_PATH}{path_file}")
-        path_file = "fbiob_pci.fpga_info_iob.0/fpga_ver"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_iob.0/fpga_ver"
         iob_version = read_sysfile_value(f"{DEV_PATH}{path_file}")
-        path_file = "fbiob_pci.fpga_info_iob.0/board_id"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_iob.0/board_id"
         iob_board_id = read_sysfile_value(f"{DEV_PATH}{path_file}")
-        path_file = "fbiob_pci.fpga_info_iob.0/board_rev"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_iob.0/board_rev"
         iob_board_rev = read_sysfile_value(f"{DEV_PATH}{path_file}")
         uptime_val = self.iob_up_time_test()
         iob_uptime = timedelta(seconds=int(uptime_val, 16))
@@ -276,13 +274,13 @@ IOB Uptime         : {iob_uptime}
 """
 
     def _show_dom1_dev_info(self) -> str:
-        path_file = "fbiob_pci.fpga_info_dom.1/device_id"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.1/device_id"
         dom1_device_id = read_sysfile_value(f"{DEV_PATH}{path_file}")
-        path_file = "fbiob_pci.fpga_info_dom.1/fpga_ver"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.1/fpga_ver"
         dom1_version = read_sysfile_value(f"{DEV_PATH}{path_file}")
-        path_file = "fbiob_pci.fpga_info_dom.1/board_id"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.1/board_id"
         dom1_board_id = read_sysfile_value(f"{DEV_PATH}{path_file}")
-        path_file = "fbiob_pci.fpga_info_dom.1/board_rev"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.1/board_rev"
         dom1_board_rev = read_sysfile_value(f"{DEV_PATH}{path_file}")
 
         return f"""\
@@ -293,13 +291,13 @@ DOM1 Board Revision: {dom1_board_rev}
 """
 
     def _show_dom2_dev_info(self) -> str:
-        path_file = "fbiob_pci.fpga_info_dom.2/device_id"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.2/device_id"
         dom2_device_id = read_sysfile_value(f"{DEV_PATH}{path_file}")
-        path_file = "fbiob_pci.fpga_info_dom.2/fpga_ver"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.2/fpga_ver"
         dom2_version = read_sysfile_value(f"{DEV_PATH}{path_file}")
-        path_file = "fbiob_pci.fpga_info_dom.2/board_id"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.2/board_id"
         dom2_board_id = read_sysfile_value(f"{DEV_PATH}{path_file}")
-        path_file = "fbiob_pci.fpga_info_dom.2/board_rev"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.2/board_rev"
         dom2_board_rev = read_sysfile_value(f"{DEV_PATH}{path_file}")
 
         return f"""\
@@ -373,13 +371,13 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
         """get firmware version functon"""
         # IOB/DOM FPGA Version
         _major, _minor, _patch = "x", "x", "x"
-        path_file = "fbiob_pci.fpga_info_iob.0/fpga_ver"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_iob.0/fpga_ver"
         val = read_sysfile_value(f"{DEV_PATH}{path_file}")
         if not val:
             iob_version = "NA"
         else:
             iob_version = f"0.{int(val, 16)}"
-        path_file = "fbiob_pci.fpga_info_dom.1/fpga_ver"
+        path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.1/fpga_ver"
         val = read_sysfile_value(f"{DEV_PATH}{path_file}")
         if not val:
             dom1_version = "NA"
@@ -387,7 +385,7 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
             dom1_version = f"0.{int(val, 16)}"
 
         if self._platform == "montblanc":
-            path_file = "fbiob_pci.fpga_info_dom.2/fpga_ver"
+            path_file = f"{IOB_PCI_DRIVER}.fpga_info_dom.2/fpga_ver"
             val = read_sysfile_value(f"{DEV_PATH}{path_file}")
             if not val:
                 dom2_version = "NA"
@@ -554,51 +552,6 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
         )
         return f'{"PASS" if stat else status}'
 
-    def gpio_chip_test(self):
-        """gpio test functon"""
-        print(
-            "-------------------------------------------------------------------------\n"
-            "                   |     GPIO Controller Test     |\n"
-            "-------------------------------------------------------------------------"
-        )
-        stat = gpio.test_gpio(self._platform)
-        return f'{"PASS" if stat != "success" else stat}'
-
-    def port_led_status_test(self):
-        """port led status test functon"""
-        platform_leds = f"{self._platform}LedsCount"
-        leds_count = self.platform_data["ledCtrlConfigs"].get(platform_leds)
-        print(
-            "-------------------------------------------------------------------------\n"
-            "                   |     Ports Led Status Test     |\n"
-            "-------------------------------------------------------------------------"
-        )
-        stat, status = leds.ports_led_light_status_test(leds_count, self._platform)
-        return f'{"PASS" if stat else status}'
-
-    def port_led_loop_test(self):
-        """port led loop test functon"""
-        platform_leds = f"{self._platform}LedsCount"
-        leds_count = self.platform_data["ledCtrlConfigs"].get(platform_leds)
-        print(
-            "-------------------------------------------------------------------------\n"
-            "                   |     Ports Led loop Test     |\n"
-            "-------------------------------------------------------------------------"
-        )
-        status = leds.port_led_turn_on_off(leds_count, self._platform)
-        return status
-
-    def fboss_xcvr_test(self):
-        """xcvr test functon"""
-        print(
-            "-------------------------------------------------------------------------\n"
-            "                        |  XCVR Function Test  |\n"
-            "-------------------------------------------------------------------------"
-        )
-        platformXcvrInfo = f"{self._platform}XcvrCount"
-        portnum = self.platform_data["i2cDeviceConfigs"].get(platformXcvrInfo)
-        return xcvr.xcvr_test(portnum)
-
     def fboss_sensor_test(self):
         """sensors test functon"""
         print(
@@ -608,23 +561,6 @@ System Uptime   : {execute_shell_cmd('uptime -p')[1].strip()}
         )
         sensor.sensors_folder_list()
         return sensor.sensor_test(self._platform)
-
-    def fboss_hwmon_test(self):
-        """sensors hwmon functon"""
-        print(
-            "-------------------------------------------------------------------------\n"
-            "                        |  Sensor devices Test  |\n"
-            "-------------------------------------------------------------------------"
-        )
-        return sensor.hwmon_data()
-
-    def fboss_firmware_test(self):
-        print(
-            "-------------------------------------------------------------------------\n"
-            "                       |  Firmware Upgrade test  |\n"
-            "-------------------------------------------------------------------------"
-        )
-        firmware_upgrade()
 
     def detect_i2c_devices(self):
         print(

@@ -6,6 +6,12 @@ import os
 import sys
 from fboss import Fboss
 from xadc import test_iob_xadc
+from xcvr import XcvrManager
+from leds import port_led_status_test, port_led_loop_test
+from hwmon import Hwmon
+from sensor import sensor_test
+from gpio import gpio_chip_test
+from firmware_upgrade import fboss_firmware_test
 
 def arg_parser():
     """Parses command-line arguments."""
@@ -54,6 +60,7 @@ command list:
     iob_scatch
     iob_version
     iob_info
+    iob_xadc
     spi_udev
     spi_detect
     gpio
@@ -130,32 +137,33 @@ class TestFboss(unittest.TestCase):
 
     def test_gpio(self):
         """Test GPIO chip."""
-        self.fboss.gpio_chip_test()
+        gpio_chip_test()
 
     def test_port_led(self):
         """Test port LED status."""
-        self.fboss.port_led_status_test()
+        port_led_status_test()
 
     def test_loop_leds(self):
         """Test port LED loop."""
-        self.fboss.port_led_loop_test()
+        port_led_loop_test()
 
     def test_xcvrs(self):
         """Test XCVRs."""
-        self.fboss.fboss_xcvr_test()
+        xcvr_manager = XcvrManager()
+        xcvr_manager.test_xcvr_devices()
 
     def test_sensors(self):
         """Test sensors."""
-        self.fboss.fboss_sensor_test()
-        self.fboss.fboss_end_flag_test()
+        sensor_test()
 
     def test_hwmon(self):
         """Test HWMON."""
-        self.fboss.fboss_hwmon_test()
+        hwmon = Hwmon()
+        hwmon.hwmon_test()
 
     def test_firmware_upgrade(self):
         """Test firmware upgrade."""
-        self.fboss.fboss_firmware_test()
+        fboss_firmware_test()
 
 
 if __name__ == "__main__":

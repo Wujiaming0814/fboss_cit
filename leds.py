@@ -3,13 +3,18 @@
 
 import time
 import os
-from fboss_utils import read_sysfile_value, write_sysfile_value
+from fboss_utils import read_sysfile_value, write_sysfile_value, get_platform
 
 LEDS_CLASS = "/sys/class/leds/"
 INPUT_MSG = "Light led mode: [A]Automated or [M]Manual running leds"
 
 LED_ON = 1
 LED_OFF = 0
+
+# Define LED counts for different platforms
+MONTBLANC_LEDS_COUNT = 64
+JANGA_LEDS_COUNT = 46
+TAHAN_LEDS_COUNT = 33
 
 TABLE_FLAG = "-----+-----+-----+-----+"
 
@@ -80,7 +85,7 @@ def turn_off_ports_led(port_nums):
         for ledidx in range(1, 3):
             status = port_led_off(portid, ledidx)
     if status == "PASS":
-        print("\nled:turn off all port leds.\n")
+        print("\n-----------------------led:turn off all port leds.-----------------------\n")
     return status
 
 
@@ -280,5 +285,29 @@ def ports_led_light_status_test(port_nums, platform="tahan"):
     return stat, status
 
 
+def port_led_status_test():
+    """port led status test functon"""
+    platform = get_platform()
+    leds_count = eval(f"{platform.upper()}_LEDS_COUNT")
+    print(
+        "-------------------------------------------------------------------------\n"
+        "                   |     Ports Led Status Test     |\n"
+        "-------------------------------------------------------------------------"
+    )
+    stat, status = ports_led_light_status_test(leds_count, platform)
+    return f'{"PASS" if stat else status}'
+
+def port_led_loop_test():
+    """port led loop test functon"""
+    platform = get_platform()
+    leds_count = eval(f"{platform.upper()}_LEDS_COUNT")
+    print(
+        "-------------------------------------------------------------------------\n"
+        "                   |     Ports Led loop Test     |\n"
+        "-------------------------------------------------------------------------"
+    )
+    status = port_led_turn_on_off(leds_count, platform)
+    return status
+
 if __name__ == "__main__":
-    ports_led_light_status_test(33)
+    ports_led_light_status_test(TAHAN_LEDS_COUNT)

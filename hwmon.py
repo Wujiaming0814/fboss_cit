@@ -148,3 +148,12 @@ class Hwmon():
 
                     print("+--------" + TABLE_FLAG * 7)
         return ret
+    
+    def hwmon_test(self):
+        """sensors hwmon functon"""
+        print(
+            "-------------------------------------------------------------------------\n"
+            "                        |  system hwmon Test  |\n"
+            "-------------------------------------------------------------------------"
+        )
+        return self.print_data_format()

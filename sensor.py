@@ -1,9 +1,9 @@
 import os
-from fboss_utils import *
+import subprocess
+from fboss_utils import read_sysfile_value, write_sysfile_value, get_platform
 import fboss
-from hwmon import Hwmon
 
-# Define constants for sensor status and error messages
+# Constants for sensor status and error messages
 SENSOR_SUCCESS = "success"
 SENSOR_ERR_1 = "name is NULL"
 SENSOR_ERR_2 = "physical channel is NULL"
@@ -21,6 +21,16 @@ HWMON_PATH = "/sys/class/hwmon/"
 TABLE_FLAG = "-----+-----+-----+-----+"
 SKIP = "SMB_U19_LM75B_1"
 
+# Sensor data structure (more organized)
+class Sensor:
+    def __init__(self, udev_link, chip_id, kernel_info, device1, device2):
+        self.udev_link = udev_link
+        self.chip_id = chip_id
+        self.kernel_info = kernel_info
+        self.device1 = device1
+        self.device2 = device2
+
+# Sensor data for different platforms
 TAHAN_SENSOR = [
     # udev link:chip id:kernel info:device:device
     "SMB_J28_PMBUS_2:0061:fbiob iob_i2c_master.21 at 0xfb505500:power1_input:temp1_input",
@@ -88,18 +98,13 @@ def check_file_type(path):
         path: The path to the file.
 
     Returns:
-        A string indicating the file type, or None if the file does not exist.
+        True if the path is a file, False if it's a directory, None if it doesn't exist.
     """
 
     if not os.path.exists(path):
         return None
 
-    if os.path.isfile(path):
-        return True
-    elif os.path.isdir(path):
-        return False
-    else:
-        return None
+    return os.path.isfile(path)
 
 def get_subdirectories(path):
     """
@@ -113,40 +118,59 @@ def get_subdirectories(path):
     """
 
     subdirectories = []
-
     for item in os.listdir(path):
         item_path = os.path.join(path, item)
         if os.path.isdir(item_path):
             subdirectories.append(item_path)
-
     return subdirectories
 
-
 def get_device_name(path):
-    """ """
-    dev_name = None
+    """
+    Gets the device name from the 'name' file within a given path.
+
+    Args:
+        path: The path to the directory containing the 'name' file.
+
+    Returns:
+        The device name as a string, or None if the 'name' file doesn't exist.
+    """
+
     dev_path = os.path.join(path, "name")
-    if check_file_type(dev_path):
-        return dev_name
+    if not os.path.exists(dev_path):
+        return None
 
-    if os.path.exists(dev_path):
-        cmd = f"cat {dev_path}"
-        dev_name = os.system(cmd)
-
+    with open(dev_path, "r") as f:
+        dev_name = f.read().strip()
     return dev_name
 
-
 def sensors_folder_list():
-    """ """
-    sensors_list = get_subdirectories(HWMON_PATH)
+    """
+    Lists all sensor folders within the HWMON_PATH.
 
+    This function is currently unused and can be removed if not needed.
+    """
+
+    sensors_list = get_subdirectories(HWMON_PATH)
     for item in sensors_list:
         item_path = os.path.join(HWMON_PATH, item)
         name = get_device_name(item_path)
 
 def check_sensor_physical_channel(name, chip_id, channel):
+    """
+    Checks if the sensor's physical channel is accessible.
+
+    Args:
+        name: The name of the sensor.
+        chip_id: The chip ID of the sensor.
+        channel: The physical channel (e.g., "i2c-1").
+
+    Returns:
+        A tuple containing the status (SENSOR_SUCCESS or error message) and the bus ID.
+    """
+
     status = SENSOR_SUCCESS
     busid = -1
+
     if name == "":
         return SENSOR_ERR_1, busid
 
@@ -171,26 +195,47 @@ def check_sensor_physical_channel(name, chip_id, channel):
     arr = bus.split("/")
     busid = arr[3]
 
+    # Use subprocess for more reliable shell command execution
     cmd = f"i2cdetect -l | grep {channel} | grep i2c-{busid}"
-    stat, stdout = execute_shell_cmd(cmd)
-    if not stat:
+    try:
+        output = subprocess.check_output(cmd, shell=True).decode("utf-8")
+    except subprocess.CalledProcessError:
         status = SENSOR_ERR_8.format(busid)
-    if stdout.strip() == "":
-        status = SENSOR_ERR_9.format(chipid, chip_id)
+    else:
+        if output.strip() == "":
+            status = SENSOR_ERR_9.format(chipid, chip_id)
 
     return status, busid
 
-
 def split_arr(array):
-    arr = array.split(":")
+    """
+    Splits a string into an array based on ':'.
 
-    # return (arr[0], arr[1], arr[2], arr[3], arr[4])
-    return arr
+    Args:
+        array: The string to split.
 
+    Returns:
+        A list of strings.
+    """
+
+    return array.split(":")
 
 def get_sensor_data(udev_link, device1, device2):
+    """
+    Reads sensor data from the specified files.
+
+    Args:
+        udev_link: The udev link of the sensor.
+        device1: The first device file to read.
+        device2: The second device file to read.
+
+    Returns:
+        A tuple containing the status (SENSOR_SUCCESS or error message), the data from device1, and the data from device2.
+    """
+
     val1 = "NA"
     val2 = "NA"
+
     sensor_file = f"/run/devmap/sensors/{udev_link}/{device1}"
     if not os.path.exists(sensor_file):
         return (SENSOR_ERR_10.format(udev_link), val1, val2)
@@ -209,64 +254,66 @@ def get_sensor_data(udev_link, device1, device2):
 
     return (SENSOR_SUCCESS, val1, val2)
 
+def sensor_data(platform):
+    """
+    Tests the sensors on the specified platform.
 
-def sensor_test(platform):
+    Args:
+        platform: The platform to test (e.g., "tahan", "janga").
+
+    Returns:
+        The overall test status (SENSOR_SUCCESS or error message).
+    """
+
     print(
         "-------------------------------------------------------------------------\n"
         "       Sensor ID       | Bus | Addr | test data1 | test data2 | Status\n"
         "-------------------------------------------------------------------------"
     )
-    check = 0
 
+    sensors = []
     if platform == "janga":
-        number = len(J3_SENSOR)
-        arr = J3_SENSOR
+        sensors = J3_SENSORS
         evt_version = fboss.get_board_revision()
         if evt_version == "EVT1" or evt_version == "DVT1":
-            check = 0
+            pass  # No skipping needed
         elif evt_version == "EVT2":
-            check = 1
+            sensors = [sensor for sensor in sensors if sensor.udev_link != SKIP]
         else:
             return SENSOR_ERR_5.format(evt_version)
-
     elif platform == "tahan":
-        number = len(TAHAN_SENSOR)
-        arr = TAHAN_SENSOR
+        sensors = TAHAN_SENSORS
     elif platform == "montblanc":
         return "ERROR"
     else:
         return SENSOR_ERR_4.format(platform)
 
-    for i in range(0, number):
+    for sensor in sensors:
         status = "PASS"
         data1 = ""
         data2 = ""
-        udev_link, chip_id, info, device1, device2 = split_arr(arr[i])
 
-        if check == 1:
-            if udev_link == SKIP:
-                continue
-
-        ret, bus_info = check_sensor_physical_channel(udev_link, chip_id, info)
+        ret, bus_info = check_sensor_physical_channel(sensor.udev_link, sensor.chip_id, sensor.kernel_info)
         if ret != SENSOR_SUCCESS:
             status = "\033[31mFAIL\033[0m\t" + f"{ret}"
 
-        ret, data1, data2 = get_sensor_data(udev_link, device1, device2)
+        ret, data1, data2 = get_sensor_data(sensor.udev_link, sensor.device1, sensor.device2)
         if ret != SENSOR_SUCCESS:
             status = "\033[31mFAIL\033[0m\t" + f"{ret}"
 
         print(
-            f'{udev_link:<22}{"":>3}{bus_info:<2}{"":>4}'
-            + f'{hex(int(chip_id, 16)):<3}{"":>3}{data1.strip():<10}'
+            f'{sensor.udev_link:<22}{"":>3}{bus_info:<2}{"":>4}'
+            + f'{hex(int(sensor.chip_id, 16)):<3}{"":>3}{data1.strip():<10}'
             + f'{"":>3}{data2.strip():<10}{"":>3}{status:<5} \n',
             end="",
         )
+
     return status
 
-def hwmon_data():
-    print(Hwmon().print_data_format())
+def sensor_test(platform=None):
+    if not platform:
+        platform = get_platform()
+    sensor_data(platform)
 
 if __name__ == "__main__":
-    #sensor_test("tahan")
-    #print(Hwmon().data())
-    print(Hwmon().print_data_format())
+    sensor_test()
