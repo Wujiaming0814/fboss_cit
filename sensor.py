@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from fboss_utils import read_sysfile_value, write_sysfile_value, get_platform
 import fboss
@@ -21,14 +22,121 @@ HWMON_PATH = "/sys/class/hwmon/"
 TABLE_FLAG = "-----+-----+-----+-----+"
 SKIP = "SMB_U19_LM75B_1"
 
+IOB_PCI_DRIVER = "fbiob_pci"
+I2C_PATH = "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/"
+HWMON_PATH = (
+    "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/i2c-{}/{}-00{}/hwmon/hwmon*/"
+)
+
+
 # Sensor data structure (more organized)
 class Sensor:
-    def __init__(self, udev_link, chip_id, kernel_info, device1, device2):
-        self.udev_link = udev_link
+    """
+    busid: HW channel ID
+    addr: sensor device slave address
+    sysfs_link: sysfs device link
+    chip_id: chip information
+    position: sensor device position
+    coefficient: multiply coefficient
+    unit: data unit(V, A, W, °C, RPM)
+    maxval: data max threhdold
+    minval: data min threhdold
+    """
+
+    def __init__(
+        self,
+        fpga_id,
+        busid,
+        addr,
+        sysfs_link,
+        chip_id,
+        position,
+        coefficient,
+        unit,
+        maxval,
+        minval,
+    ):
+        self.busid = busid
+        self.addr = addr
+        self.sysfs_link = sysfs_link
+        self.fpga_id = fpga_id
         self.chip_id = chip_id
-        self.kernel_info = kernel_info
-        self.device1 = device1
-        self.device2 = device2
+        self.position = position
+        self.coefficient = coefficient
+        self.unit = unit
+        self.maxval = maxval
+        self.minval = minval
+
+    def get_i2c_bus(self, directory):
+        """
+        Searches for the I2C bus ID within files in a given directory.
+
+        Args:
+        directory: The directory to search.
+
+        Returns:
+        The I2C bus ID as a string, or None if not found.
+        """
+
+        files = os.listdir(directory)
+
+        for file in files:
+            dev = re.findall(r"i2c-\d+", file, re.M)
+            if dev:
+                return dev[0].split("-")[1]
+
+        return None
+
+    def _read_sysfs_data(self):
+        if not os.path.exists(self.sysfs_link):
+            return None
+
+        with open(self.sysfs_link, "r") as f:
+            sensor_data = f.read().strip()
+
+        return sensor_data
+
+    def _read_device_data(self):
+        for self.fpga_id in ["iob", "dom1", "dom2"]:
+            bus_path = I2C_PATH.format(IOB_PCI_DRIVER, self.fpga_id.lower(), self.busid)
+            if not os.path.exists(bus_path):
+                return None
+
+            busid = self.get_i2c_bus(bus_path)
+            dev_path = HWMON_PATH.format(
+                IOB_PCI_DRIVER,
+                self.fpga_id.lower(),
+                self.busid,
+                busid,
+                busid,
+                self.addr,
+            )
+
+            if not os.path.exists(dev_path):
+                return None
+
+            with open(dev_path, "r") as f:
+                sensor_data = f.read().strip()
+
+            return sensor_data
+
+    def test_sensor_data(self):
+        data = self._read_sysfs_data()
+        if data:
+            return self._compare_data(data)
+        else:
+            data = self._read_device_data()
+            if data:
+                return self._compare_data(data)
+            else:
+                print("Invalid device")
+
+    def _compare_data(self, raw_data):
+        if self.minval:
+            return {"FAIL" if raw_data < self.minval else "PASS"}
+        if self.maxval:
+            return {"FAIL" if raw_data > self.maxval else "PASS"}
+
 
 # Sensor data for different platforms
 TAHAN_SENSOR = [
@@ -90,6 +198,7 @@ J3_SENSOR = [
     "SMB_U353_ADC128D818_3:001f:fbiob iob_i2c_master.26 at 0xfb505a00:in0_input:in1_input",
 ]
 
+
 def check_file_type(path):
     """
     Checks the file type of a given path.
@@ -105,6 +214,7 @@ def check_file_type(path):
         return None
 
     return os.path.isfile(path)
+
 
 def get_subdirectories(path):
     """
@@ -123,6 +233,7 @@ def get_subdirectories(path):
         if os.path.isdir(item_path):
             subdirectories.append(item_path)
     return subdirectories
+
 
 def get_device_name(path):
     """
@@ -143,6 +254,7 @@ def get_device_name(path):
         dev_name = f.read().strip()
     return dev_name
 
+
 def sensors_folder_list():
     """
     Lists all sensor folders within the HWMON_PATH.
@@ -154,6 +266,7 @@ def sensors_folder_list():
     for item in sensors_list:
         item_path = os.path.join(HWMON_PATH, item)
         name = get_device_name(item_path)
+
 
 def check_sensor_physical_channel(name, chip_id, channel):
     """
@@ -207,6 +320,7 @@ def check_sensor_physical_channel(name, chip_id, channel):
 
     return status, busid
 
+
 def split_arr(array):
     """
     Splits a string into an array based on ':'.
@@ -219,6 +333,7 @@ def split_arr(array):
     """
 
     return array.split(":")
+
 
 def get_sensor_data(udev_link, device1, device2):
     """
@@ -253,6 +368,7 @@ def get_sensor_data(udev_link, device1, device2):
         return (SENSOR_ERR_8, val1, val2)
 
     return (SENSOR_SUCCESS, val1, val2)
+
 
 def sensor_data(platform):
     """
@@ -293,11 +409,15 @@ def sensor_data(platform):
         data1 = ""
         data2 = ""
 
-        ret, bus_info = check_sensor_physical_channel(sensor.udev_link, sensor.chip_id, sensor.kernel_info)
+        ret, bus_info = check_sensor_physical_channel(
+            sensor.udev_link, sensor.chip_id, sensor.kernel_info
+        )
         if ret != SENSOR_SUCCESS:
             status = "\033[31mFAIL\033[0m\t" + f"{ret}"
 
-        ret, data1, data2 = get_sensor_data(sensor.udev_link, sensor.device1, sensor.device2)
+        ret, data1, data2 = get_sensor_data(
+            sensor.udev_link, sensor.device1, sensor.device2
+        )
         if ret != SENSOR_SUCCESS:
             status = "\033[31mFAIL\033[0m\t" + f"{ret}"
 
@@ -310,10 +430,12 @@ def sensor_data(platform):
 
     return status
 
+
 def sensor_test(platform=None):
     if not platform:
         platform = get_platform()
     sensor_data(platform)
+
 
 if __name__ == "__main__":
     sensor_test()

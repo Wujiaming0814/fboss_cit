@@ -111,12 +111,14 @@ def loop_port_leds(portid):
     """Loop through all colors and LEDs on a single port."""
     status = "PASS"
     for ledidx in range(1, 3):
-        for color in ["yellow", "blue", "green"]:
+        for color in ["blue", "green", "yellow"]:
             stat = port_led_on(portid, ledidx, color)
             if not stat:
                 status = "\033[31mFAIL\033[0m\tcontrol led command error"
             time.sleep(0.2)  # switch color delay 0.2 seconds
-            print(f"led:turn on port_{portid} index_{ledidx} {color}\r\n", end="")
+            print(f"led:turn on port: \033[1;32m{portid}\033[00m \
+                  index: \033[1;34m{ledidx}\033[00m {color}  ",
+                  end="\r", flush = True)
     return status
 
 
