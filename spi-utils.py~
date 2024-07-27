@@ -231,7 +231,7 @@ if __name__ == "__main__":
         "dom2": {"spi_bus": 2, "chip": "N25Q128..3E", "flash_size": 16384 * 1024},
         "j3b": {"spi_bus": 2, "chip": "N25Q128..1E", "flash_size": 32768 * 1024},
         "pwrcpld": {"spi_bus": 3, "chip": "W25X20", "flash_size": 256 * 1024},
-        "mcbcpld": {"spi_bus": 3, "chip": "W25X20", "flash_size": 256 * 1024},
+        "mcbcpld": {"spi_bus": 3, "chip": "N25Q128..3E", "flash_size": 16384 * 1024},
         "smbcpld": {"spi_bus": 4, "chip": "W25X20", "flash_size": 256 * 1024},
         "smb2cpld": {"spi_bus": 4, "chip": "W25X20", "flash_size": 256 * 1024},
         "th5": {"spi_bus": 5, "chip": "N25Q128..1E", "flash_size": 32768 * 1024},

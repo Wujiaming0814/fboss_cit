@@ -8,9 +8,9 @@ CHIP_MAP = {
     "iob": "N25Q128..3E",
     "dom1": "N25Q128..3E",
     "dom2": "N25Q128..3E",
-    "mp3_mcbcpld": "W25X20",
-    "mp3_smbcpld": "W25X20",
-    "mp3_scmcpld": "W25X20",
+    "mcbcpld": "W25X20",
+    "smbcpld": "W25X20",
+    "scmcpld": "W25X20",
     "pwrcpld": "W25X20",
     "smbcpld1": "W25X20",
     "smbcpld2": "W25X20",
@@ -19,9 +19,9 @@ CHIP_MAP = {
 GPIOPIN_MAP = {
     "dom1": "9",
     "dom2": "10",
-    "mp3_mcbcpld": "3",
-    "mp3_smbcpld": "7",
-    "mp3_scmcpld": "1",
+    "mcbcpld": "3",
+    "smbcpld": "7",
+    "scmcpld": "1",
     "pwrcpld": "3",
     "smbcpld1": "1",
     "smbcpld2": "7",
@@ -97,7 +97,10 @@ def firmware_upgrade() -> None:
     # Switch mux to select flash device and upgrade
     if gpionum:
         select_gpio(gpionum)
+
     flash_devmap = f"/run/devmap/flashes/{devname.upper()}_FLASH"
+    if devname == "scmcpld":
+        flash_devmap = f"/run/devmap/flashes/I210_{devname.upper()}_FLASH"
     upgrade_cmd = f"flashrom -p linux_spi:dev={os.readlink(flash_devmap)} -w {fwimg} -c {chipname}"
     print(upgrade_cmd, "\n\nStarting firmware upgrade...\n")
 
