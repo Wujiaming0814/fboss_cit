@@ -3,22 +3,41 @@
 import os
 import re
 import csv
+from pathlib import Path
 
 # Constants for sensor status and error messages
 SENSOR_SUCCESS = "success"
+PASS = "\033[1;32mPASS\033[00m"
+FAILED = "\033[1;31mFAIL\033[0m"
 
 # Define paths and constants
 IOB_PCI_DRIVER = "fbiob_pci"
 I2C_PATH = "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/"
-HWMON_PATH = "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/i2c-{}/{}-00{}/hwmon/"
+HWMON_PATH = "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/i2c-{}/{}-00{}/hwmon"
+MUX_DEV_PATH = "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/i2c-{}/{}-0070/channel-{}"
+CPU_TEMP = "/sys/devices/platform/coretemp.0/hwmon"
 
 # Sensor data structure (more organized)
 class Sensor:
     """
     Represents a sensor with its attributes.
     """
-    def __init__(self, fpga_id, busid, addr, sysfs_link, position, coefficient, unit, maxval, minval):
-        self.fpga_id = fpga_id
+
+    def __init__(
+        self,
+        sensor_name,
+        local,
+        busid,
+        addr,
+        sysfs_link,
+        position,
+        coefficient,
+        unit,
+        maxval,
+        minval,
+    ):
+        self.sensor_name = sensor_name
+        self.local = local
         self.busid = busid
         self.addr = addr
         self.sysfs_link = sysfs_link
@@ -28,73 +47,123 @@ class Sensor:
         self.maxval = maxval
         self.minval = minval
 
+    def value_format(self, unit: str, value: str) -> str:
+        """
+        Formats the sensor value based on its unit.
+        """
+        if value:
+            if unit == "V":
+                return round(int(value) / 1000, 2)
+            elif unit == "RPM":
+                return value
+            elif unit == "°C":
+                return round(int(value) / 1000, 2)
+            elif unit == "A":
+                return round(int(value) / 1000, 2)
+            elif unit == "W":
+                return round(int(value) / 1000000, 2)
+            elif unit == "Hz":
+                return round(int(value) / 1000000, 2)
+
     def get_i2c_bus(self, directory):
         """
         Searches for the I2C bus ID within files in a given directory.
         """
-        files = os.listdir(directory)
-        for file in files:
-            dev = re.findall(r"i2c-\d+", file, re.M)
+        # Use pathlib to iterate over files in the directory
+        for file in Path(directory).iterdir():
+            dev = re.findall(r"i2c-\d+", file.name, re.M)
             if dev:
                 return dev[0].split("-")[1]
         return None
-
+        
     def _read_sensor_data(self):
         """
         Reads sensor data from either sysfs link or device path.
         """
-        data = self._read_sysfs_data()
+        file = self.sysfs_link
+
+        data = self._read_sysfs_data(file)
         if data:
             return data
+
         data = self._read_device_data()
         if data:
             return data
+
         return None
 
-    def _read_sysfs_data(self):
+    def _read_sysfs_data(self, file_path):
         """
         Reads sensor data from the sysfs link.
         """
-        if not os.path.exists(self.sysfs_link):
+        if not Path(file_path).exists():
             return None
-        with open(self.sysfs_link, "r") as f:
+        with open(file_path, "r") as f:
             sensor_data = f.read().strip()
             if self.coefficient:
-                sensor_data = sensor_data * float(self.coefficient)
+                sensor_data = round(float(sensor_data) * float(self.coefficient), 3)
         return sensor_data
 
     def _read_device_data(self):
         """
         Reads sensor data from the device path.
         """
-        
-        fpga_id = self.fpga_id.lower()
-        dev_name = self.sysfs_link.split('/')[-1]
 
-        bus_path = I2C_PATH.format(IOB_PCI_DRIVER, fpga_id, self.busid)  # Replace fpga_id with self.fpga_id.lower()
-        if os.path.exists(bus_path):
+        local = self.local.lower()
+        dev_name = self.sysfs_link.split("/")[-1]
+
+        if "mux_" in local:
+            dev_local = local.split("_")[1].lower()
+            mux_busid = local.split("_")[2].lower()
+            bus_path = I2C_PATH.format(
+            IOB_PCI_DRIVER, dev_local, mux_busid
+            )
+        else:
+            bus_path = I2C_PATH.format(
+                IOB_PCI_DRIVER, local, self.busid
+            )
+
+        if Path(bus_path).exists():
             devid = self.get_i2c_bus(bus_path)
-            dev_path = HWMON_PATH.format(IOB_PCI_DRIVER, fpga_id, self.busid, devid, devid, self.addr)  # Replace fpga_id with self.fpga_id.lower()
-            if os.path.exists(dev_path):
-                for root, dirs, files in os.walk(dev_path):
-                    dev_file = f"{dev_path}{dirs[0]}/{dev_name}"
-                    with open(dev_file, "r") as f:
-                        sensor_data = f.read().strip()
-                    break
-                if self.coefficient:
-                    sensor_data = sensor_data * float(self.coefficient)
-                return sensor_data
+            if "mux_" in local:
+                tmp_path = MUX_DEV_PATH.format(
+                IOB_PCI_DRIVER, dev_local, mux_busid, devid, devid, self.busid
+                )
+                for files in os.listdir(tmp_path):
+                    if self.addr[3:5] in files:
+                        tmp_path = f"{tmp_path}/{files}/hwmon"
+                        for dirs in Path(tmp_path).iterdir():
+                            dev_file = f"{tmp_path}/{dirs.name}/{dev_name}"
+            else:
+                dev_path = HWMON_PATH.format(
+                    IOB_PCI_DRIVER, local, self.busid, devid, devid, self.addr[3:5]
+                )
+                if local == "COME":
+                    dev_path = CPU_TEMP
+                if Path(dev_path).exists():
+                    for dirs in Path(dev_path).iterdir():
+                        dev_file = f"{dev_path}/{dirs.name}/{dev_name}"
+                else:
+                    return None
+
+            with open(dev_file, "r") as f:
+                sensor_data = f.read().strip()
+
+            if self.coefficient:
+                sensor_data = round(int(sensor_data) * float(self.coefficient), 3)
+
+            return sensor_data
         return None
 
     def test_sensor_data(self):
         """
         Tests the sensor data against its thresholds.
         """
-        raw_data = self._read_sensor_data()
+        raw_data = self.value_format(self.unit, self._read_sensor_data())
         if raw_data:
             return raw_data, self._compare_data(raw_data)
-        print(f"Invalid device for sensor: {self.sysfs_link}")
-        return None
+        # print(f"Invalid data for sensor: {raw_data}")
+        return "NA", "NA"
 
     def _compare_data(self, raw_data):
         """
@@ -106,63 +175,84 @@ class Sensor:
             print(f"Invalid data format for sensor: {self.sysfs_link}")
             return None
 
-        if self.minval:
-            return "FAIL" if data < self.minval else "PASS"
-        if self.maxval:
-            return "FAIL" if data > self.maxval else "PASS"
-        return "PASS"
+        # Check if data is within the minimum and maximum thresholds
+        if self.minval != "NA" and data < self.minval:
+            return FAILED
+        if self.maxval != "NA" and data > self.maxval:
+            return FAILED
+
+        # If no thresholds are violated, return PASS
+        return PASS
+
 
 def read_config_file(filename):
     """
     Reads sensor configuration from a CSV file.
     """
     sensors = []
-    with open(filename, 'r', newline='') as csvfile:
+    with open(filename, "r", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
-        
+
         for row in reader:
-            sensors.append(Sensor(
-                fpga_id=row['Bus Location'].strip(' '),
-                busid=row['Bus ID'].strip(' '),
-                addr=row['Sensor Addr'][3:5],
-                sysfs_link=row['Software point'],
-                position=row['Sensor Position'],
-                coefficient=float(row['Multiply']),
-                unit=row['Sensor Unit'],
-                maxval=float(row['Max_Design']) if row['Max_Design']!='NA' else None,
-                minval=float(row['Min_Design']) if row['Min_Design']!='NA' else None
-            ))
+            sensors.append(
+                Sensor(
+                    sensor_name=row["Sensor rail name DVT"],
+                    local=row["Device location"],
+                    busid=row["Bus Num"],
+                    addr=row["Address"],
+                    sysfs_link=row["Software point"],
+                    position=row["Sensor Position"],
+                    coefficient=(row["Multiply"]),
+                    unit=row["Sensor Unit"],
+                    maxval=(
+                        float(row["Max_Design"])
+                        if any(char.isdigit() for char in row["Max_Design"])
+                        else "NA"
+                    ),
+                    minval=(
+                        float(row["Min_Design"])
+                        if any(char.isdigit() for char in row["Min_Design"])
+                        else "NA"
+                    ),
+                )
+            )
     return sensors
+
 
 def sensor_data(sensors):
     """
     Tests the sensors based on the provided configuration.
     """
     print(
-        "-------------------------------------------------------------------------\n"
-        "       Sensor ID       | Bus | Addr | test data1 | test data2 | Status\n"
-        "-------------------------------------------------------------------------"
+        "--------------------+-------+-----+------+--------+---------+---------+------+-------\n"
+        "  Sensor rail name  | Local | Bus | Addr |  Data  | Max val | Min val | Unit | Status\n"
+        "--------------------+-------+-----+------+--------+---------+---------+------+-------"
     )
 
     for sensor in sensors:
-        status = "PASS"
+        status = PASS
         data, status = sensor.test_sensor_data()
         if status:
 
             print(
-                f'{sensor.fpga_id:<22}{"":>3}{sensor.busid:<2}{"":>4}'
-                + f'{data:<5}{"":>3}{sensor.maxval}{"":>3}{sensor.minval}{"":>3}{status:<5} \n',
-                end="",
+                f'{"":2}{sensor.sensor_name[:17]:<18}{"|":<2}{sensor.local[:4]:<4}{"":>2}{"|":<2}'
+                + f'{sensor.busid:<4}{"|":<1}{sensor.addr:<6}{"|":<2}'
+                + f'{data:<7}{"|":<2}{str(sensor.maxval):<8}{"|":<2}'
+                + f'{str(sensor.minval):<8}{"|":<2}{sensor.unit:<5}{"|":<2}{status:<5}'
             )
-
+        print(
+            "--------------------+-------+-----+------+--------+---------+---------+------+-------"
+        )
     return status
 
-def sensor_test(config_file="Minipack3_sensors_threshold_list_20240719.csv"):
+
+def sensor_test(config_file="Minipack 3 sensors threshold list_20240719.csv"):
     """
     Main function to test sensors.
     """
     sensors = read_config_file(config_file)
     sensor_data(sensors)
+
 
 if __name__ == "__main__":
     sensor_test()
