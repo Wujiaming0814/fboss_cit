@@ -129,13 +129,13 @@ class Sensor:
                     IOB_PCI_DRIVER, dev_local, mux_busid, devid, devid, self.busid
                 )
                 for files in os.listdir(tmp_path):
-                    if self.addr[3:5] in files:
+                    if self.addr[2:] in files:
                         tmp_path = f"{tmp_path}/{files}/hwmon"
                         for dirs in Path(tmp_path).iterdir():
                             dev_file = f"{tmp_path}/{dirs.name}/{dev_name}"
             else:
                 dev_path = HWMON_PATH.format(
-                    IOB_PCI_DRIVER, local, self.busid, devid, devid, self.addr[3:5]
+                    IOB_PCI_DRIVER, local, self.busid, devid, devid, self.addr[2:]
                 )
                 if local == "COME":
                     dev_path = CPU_TEMP
@@ -198,7 +198,7 @@ def read_config_file(filename):
                     sensor_name=row["Sensor rail name DVT"],
                     local=row["Device location"],
                     busid=row["Bus Num"],
-                    addr=row["Address"],
+                    addr=row["Address"].strip(),
                     sysfs_link=row["Software point"],
                     position=row["Sensor Position"],
                     coefficient=(row["Multiply"]),
@@ -235,7 +235,7 @@ def sensor_data(sensors):
 
             print(
                 f'{"":2}{sensor.sensor_name[:17]:<18}{"|":<2}{sensor.local[:4]:<4}{"":>2}{"|":<2}'
-                + f'{sensor.busid:<4}{"|":<1}{sensor.addr:<6}{"|":<2}'
+                + f'{sensor.busid:<4}{"|":<2}{sensor.addr:<5}{"|":<2}'
                 + f'{data:<7}{"|":<2}{str(sensor.maxval):<8}{"|":<2}'
                 + f'{str(sensor.minval):<8}{"|":<2}{sensor.unit:<5}{"|":<2}{status:<5}'
             )
