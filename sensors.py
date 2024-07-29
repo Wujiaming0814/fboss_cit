@@ -14,8 +14,11 @@ FAILED = "\033[1;31mFAIL\033[0m"
 IOB_PCI_DRIVER = "fbiob_pci"
 I2C_PATH = "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/"
 HWMON_PATH = "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/i2c-{}/{}-00{}/hwmon"
-MUX_DEV_PATH = "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/i2c-{}/{}-0070/channel-{}"
+MUX_DEV_PATH = (
+    "/sys/bus/auxiliary/devices/{}.{}_i2c_master.{}/i2c-{}/{}-0070/channel-{}"
+)
 CPU_TEMP = "/sys/devices/platform/coretemp.0/hwmon"
+
 
 # Sensor data structure (more organized)
 class Sensor:
@@ -75,7 +78,7 @@ class Sensor:
             if dev:
                 return dev[0].split("-")[1]
         return None
-        
+
     def _read_sensor_data(self):
         """
         Reads sensor data from either sysfs link or device path.
@@ -115,19 +118,15 @@ class Sensor:
         if "mux_" in local:
             dev_local = local.split("_")[1].lower()
             mux_busid = local.split("_")[2].lower()
-            bus_path = I2C_PATH.format(
-            IOB_PCI_DRIVER, dev_local, mux_busid
-            )
+            bus_path = I2C_PATH.format(IOB_PCI_DRIVER, dev_local, mux_busid)
         else:
-            bus_path = I2C_PATH.format(
-                IOB_PCI_DRIVER, local, self.busid
-            )
+            bus_path = I2C_PATH.format(IOB_PCI_DRIVER, local, self.busid)
 
         if Path(bus_path).exists():
             devid = self.get_i2c_bus(bus_path)
             if "mux_" in local:
                 tmp_path = MUX_DEV_PATH.format(
-                IOB_PCI_DRIVER, dev_local, mux_busid, devid, devid, self.busid
+                    IOB_PCI_DRIVER, dev_local, mux_busid, devid, devid, self.busid
                 )
                 for files in os.listdir(tmp_path):
                     if self.addr[3:5] in files:
