@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-
 """
 NXP PN54x NFC Tool via I2C and NCI Protocol.
 
 This script demonstrates how to interact with an NXP PN54x NFC controller
-(like the PN7150 or PN7120) directly over an I2C bus using the NCI 
-(NFC Controller Interface) protocol. 
+(like the PN7150 or PN7120) directly over an I2C bus using the NCI
+(NFC Controller Interface) protocol.
 
 Version History:
     v1.2.0 (2026-05-25):
-        - Updated --i2c-bus parameter to accept just the bus number (e.g., 7) 
+        - Updated --i2c-bus parameter to accept just the bus number (e.g., 7)
           and automatically resolve it to the full device path (/dev/i2c-7).
         - Removed redundant polling wait prompts.
         - Redesigned the standard output into a clean ASCII table format.
@@ -20,10 +19,10 @@ Version History:
     v1.1.0 (2026-05-22):
         - Added argparse for command-line parameter support (--mode, --data).
         - Implemented NDEF writing functionality for ISO-DEP (Type 4A) tags.
-    v1.0.0 (2026-05-22): 
-        - Initial working version. 
+    v1.0.0 (2026-05-22):
+        - Initial working version.
 
-Author: Lucas Liu (Celestica)
+Author: Lucas/celestica
 License: GPL-3.0 License
 """
 
@@ -76,7 +75,7 @@ class NciPacket:
         length = data[2]
         payload = data[3:3+length]
         return {
-            'mt': mt, 
+            'mt': mt,
             'mt_name': ['DATA', 'CMD', 'RSP', 'NTF'][mt] if mt < 4 else '?',
             'gid': gid, 'oid': oid, 'length': length, 'payload': payload,
             'raw': data[:3+length]
@@ -90,7 +89,7 @@ def parse_ndef_text(ndef_bytes):
             payload_len = ndef_bytes[2]
             payload = ndef_bytes[4 : 4 + payload_len]
             status_byte = payload[0]
-            lang_len = status_byte & 0x3F 
+            lang_len = status_byte & 0x3F
             text_bytes = payload[1 + lang_len :]
             return text_bytes.decode('utf-8', errors='ignore')
     except Exception as e:
@@ -100,7 +99,7 @@ def parse_ndef_text(ndef_bytes):
 def build_ndef_text_payload(text_data):
     """Constructs a raw NDEF Text Record (English) byte array."""
     text_bytes = text_data.encode('utf-8')
-    payload_len = 1 + 2 + len(text_bytes) 
+    payload_len = 1 + 2 + len(text_bytes)
     header = bytes([0xD1, 0x01, payload_len, 0x54, 0x02, 0x65, 0x6E])
     return header + text_bytes
 
@@ -129,31 +128,31 @@ def print_nfc_table(tag_info, ndef_info, mode="Read"):
     """Prints the tag and NDEF information in a formatted ASCII table."""
     uid_str = tag_info.get('uid', 'N/A').replace(':', ' ')
     protocol = tag_info.get('protocol', 'N/A')
-    
+
     print("\n+" + "-"*60 + "+")
     print(f"|{'NFC Tag Information (Mode: ' + mode.capitalize() + ')':^60}|")
     print("+" + "-"*20 + "+" + "-"*39 + "+")
     print(f"| {'UID':<18} | {uid_str:<37} |")
     print(f"| {'Protocol':<18} | {protocol:<37} |")
-    
+
     if ndef_info:
         print("+" + "-"*20 + "+" + "-"*39 + "+")
         print(f"| {'Max Capacity':<18} | {str(ndef_info.get('max_capacity', 'N/A')) + ' bytes':<37} |")
-        
+
         if mode.lower() == 'read':
             print(f"| {'Content Length':<18} | {str(ndef_info.get('content_length', 'N/A')) + ' bytes':<37} |")
         else:
             print(f"| {'Written Length':<18} | {str(ndef_info.get('written_length', 'N/A')) + ' bytes':<37} |")
-            
+
         print(f"| {'Record Type':<18} | {ndef_info.get('type', 'N/A'):<37} |")
-        
+
         print("+" + "-"*20 + "+" + "-"*39 + "+")
         data_str = ndef_info.get('data', 'N/A')
         # Handle string truncation for the table display
         if len(data_str) > 37:
             data_str = data_str[:34] + "..."
         print(f"| {'Payload Data':<18} | {data_str:<37} |")
-        
+
     print("+" + "-"*20 + "+" + "-"*39 + "+\n")
 
 
@@ -175,11 +174,11 @@ class PN54x:
     def reset_chip(self):
         try:
             os.write(self.reset_fd, bytes([self.reset_reg, self.reset_val_enable]))
-            time.sleep(0.1) 
+            time.sleep(0.1)
             os.write(self.reset_fd, bytes([self.reset_reg, self.reset_val_disable]))
-            time.sleep(0.1)  
+            time.sleep(0.1)
             os.write(self.reset_fd, bytes([self.reset_reg, self.reset_val_enable]))
-            time.sleep(0.1)  
+            time.sleep(0.1)
         except Exception as e:
             print(f"Error during I2C reset: {e}")
 
@@ -190,7 +189,7 @@ class PN54x:
                 return True
             except Exception as e:
                 if attempt == 2: print(f"I2C write error (final attempt): {e}")
-                else: time.sleep(0.1) 
+                else: time.sleep(0.1)
         return False
 
     def read_packet(self, timeout_sec=2.0):
@@ -202,7 +201,7 @@ class PN54x:
         for attempt in range(3):
             try:
                 header_data = os.read(self.i2c_fd, NORMAL_MODE_HEADER_LEN)
-                break  
+                break
             except Exception as e:
                 if attempt == 2: print(f"I2C read error (header, final attempt): {e}")
                 else: time.sleep(0.05)
@@ -257,25 +256,25 @@ def read_ndef_iso_dep(nfc_chip):
     if not (resp := nfc_chip.iso_dep_transceive([0x00, 0xA4, 0x04, 0x00, 0x07, 0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01, 0x00])) or resp[-2:] != b'\x90\x00': return None
     if not (resp := nfc_chip.iso_dep_transceive([0x00, 0xA4, 0x00, 0x0C, 0x02, 0xE1, 0x03])) or resp[-2:] != b'\x90\x00': return None
     if not (cc_data := nfc_chip.iso_dep_transceive([0x00, 0xB0, 0x00, 0x00, 0x0F])) or cc_data[-2:] != b'\x90\x00': return None
-    
+
     cc_file = cc_data[:-2]
     max_size = int.from_bytes(cc_file[3:5], 'big')
     ndef_file_id = int.from_bytes(cc_file[9:11], 'big')
 
     if not (resp := nfc_chip.iso_dep_transceive([0x00, 0xA4, 0x00, 0x0C, 0x02, (ndef_file_id >> 8) & 0xFF, ndef_file_id & 0xFF])) or resp[-2:] != b'\x90\x00': return None
-    
+
     if not (len_data := nfc_chip.iso_dep_transceive([0x00, 0xB0, 0x00, 0x00, 0x02])) or len(len_data) < 4 or len_data[-2:] != b'\x90\x00': return None
     ndef_len = int.from_bytes(len_data[:2], 'big')
 
     if ndef_len == 0:
         return {'max_capacity': max_size, 'content_length': 0, 'type': 'Empty', 'data': 'No Data'}
 
-    le = ndef_len if ndef_len <= 255 else 0x00 
+    le = ndef_len if ndef_len <= 255 else 0x00
     if not (ndef_data := nfc_chip.iso_dep_transceive([0x00, 0xB0, 0x00, 0x02, le])) or ndef_data[-2:] != b'\x90\x00': return None
-    
+
     ndef_content = ndef_data[:-2]
     parsed_text = parse_ndef_text(ndef_content)
-    
+
     return {
         'max_capacity': max_size,
         'content_length': ndef_len,
@@ -287,17 +286,17 @@ def write_ndef_iso_dep(nfc_chip, text_data):
     """Executes NDEF write sequence for ISO-DEP tags using UPDATE BINARY."""
     ndef_payload = build_ndef_text_payload(text_data)
     total_len = len(ndef_payload)
-    
+
     if not (resp := nfc_chip.iso_dep_transceive([0x00, 0xA4, 0x04, 0x00, 0x07, 0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01, 0x00])) or resp[-2:] != b'\x90\x00': return None
     if not (resp := nfc_chip.iso_dep_transceive([0x00, 0xA4, 0x00, 0x0C, 0x02, 0xE1, 0x03])) or resp[-2:] != b'\x90\x00': return None
     if not (cc_data := nfc_chip.iso_dep_transceive([0x00, 0xB0, 0x00, 0x00, 0x0F])) or cc_data[-2:] != b'\x90\x00': return None
-    
+
     max_size = int.from_bytes(cc_data[3:5], 'big')
     if total_len > max_size: return None
-        
+
     ndef_file_id = int.from_bytes(cc_data[9:11], 'big')
     if not (resp := nfc_chip.iso_dep_transceive([0x00, 0xA4, 0x00, 0x0C, 0x02, (ndef_file_id >> 8) & 0xFF, ndef_file_id & 0xFF])) or resp[-2:] != b'\x90\x00': return None
-    
+
     reset_len_apdu = [0x00, 0xD6, 0x00, 0x00, 0x02, 0x00, 0x00]
     if not (resp := nfc_chip.iso_dep_transceive(reset_len_apdu)) or resp[-2:] != b'\x90\x00': return None
 
@@ -319,14 +318,14 @@ def main():
         description="NXP PN54x NDEF Read/Write Tool",
         formatter_class=argparse.RawTextHelpFormatter
     )
-    
-    parser.add_argument('-m', '--mode', type=str, choices=['read', 'write'], 
+
+    parser.add_argument('-m', '--mode', type=str, choices=['read', 'write'],
                         help="Operation mode:\n  'read'  - Wait for a tag and print its contents.\n  'write' - Wait for a tag and write data to it.")
     parser.add_argument('-d', '--data', type=str, default="hello world",
                         help="The text data to write to the tag (used only in 'write' mode).")
     parser.add_argument('--i2c-bus', type=str, default=I2C_BUS_PATH,
                         help="The I2C bus number (e.g., 7) or full path (e.g., /dev/i2c-7) (default: 7)")
-    parser.add_argument('--i2c-addr', type=lambda x: int(x,0), default=I2C_ADDR, 
+    parser.add_argument('--i2c-addr', type=lambda x: int(x,0), default=I2C_ADDR,
                         help="The I2C slave address of the NFC controller (default: 0x28)")
 
     if len(sys.argv) == 1:
@@ -334,7 +333,7 @@ def main():
         sys.exit(1)
 
     args = parser.parse_args()
-    
+
     # Parse the I2C bus parameter gracefully
     i2c_bus_str = str(args.i2c_bus)
     actual_i2c_path = f"/dev/i2c-{i2c_bus_str}" if i2c_bus_str.isdigit() else i2c_bus_str
@@ -343,16 +342,16 @@ def main():
 
     try:
         nfc_chip = PN54x(actual_i2c_path, args.i2c_addr, RESET_I2C_BUS_PATH, RESET_CHIP_ADDR, RESET_REG, RESET_VAL_ENABLE, RESET_VAL_DISABLE)
-        
+
         # Init & Map
-        nfc_chip.write_packet([0x20, 0x00, 0x01, 0x01]); nfc_chip.read_packet() 
-        nfc_chip.write_packet([0x20, 0x01, 0x00]); nfc_chip.read_packet()       
-        nfc_chip.write_packet([0x21, 0x00, 0x0A, 0x03, 0x04, 0x01, 0x02, 0x05, 0x01, 0x03, 0x02, 0x01, 0x01]) 
-        nfc_chip.read_packet() 
+        nfc_chip.write_packet([0x20, 0x00, 0x01, 0x01]); nfc_chip.read_packet()
+        nfc_chip.write_packet([0x20, 0x01, 0x00]); nfc_chip.read_packet()
+        nfc_chip.write_packet([0x21, 0x00, 0x0A, 0x03, 0x04, 0x01, 0x02, 0x05, 0x01, 0x03, 0x02, 0x01, 0x01])
+        nfc_chip.read_packet()
 
         # Start Discovery
         discover_cmd = [0x21, 0x03, 0x07, 0x03, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00]
-        
+
         if nfc_chip.write_packet(discover_cmd):
             resp = nfc_chip.read_packet()
             if resp and len(resp) > 3 and resp[3] == 0x00:
@@ -366,25 +365,25 @@ def main():
                     if pkt['mt'] == NciPacket.MT_NTF and pkt['gid'] == NciPacket.GID_RF and pkt['oid'] == NciPacket.OID_RF_INTF_ACTIVATED:
                         tag_info = parse_intf_activated_ntf(pkt['payload'])
                         if tag_info and tag_info.get('protocol') == 'ISO-DEP (ISO14443-4)':
-                            
+
                             if args.mode == 'read':
                                 result = read_ndef_iso_dep(nfc_chip)
                                 if result:
                                     print_nfc_table(tag_info, result, mode='Read')
                                     break
-                            
+
                             elif args.mode == 'write':
                                 result = write_ndef_iso_dep(nfc_chip, args.data)
                                 if result:
                                     print_nfc_table(tag_info, result, mode='Write')
                                     break
-                        
+
                         # Briefly deactivate if read/write failed to try again
                         time.sleep(1)
                         nfc_chip.rf_deactivate()
 
                     elif pkt['mt'] == NciPacket.MT_NTF and pkt['gid'] == NciPacket.GID_RF and pkt['oid'] == NciPacket.OID_RF_DEACTIVATE:
-                        if nfc_chip.write_packet(discover_cmd): nfc_chip.read_packet() 
+                        if nfc_chip.write_packet(discover_cmd): nfc_chip.read_packet()
             else:
                 print("Failed to start discovery.")
     except KeyboardInterrupt:
