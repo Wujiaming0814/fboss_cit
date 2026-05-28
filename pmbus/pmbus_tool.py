@@ -548,23 +548,30 @@ def auto_detect_model(bus, address):
         raw_data = result.stdout.strip()
         parts = raw_data.split()
 
+        # Block Read format: Length Byte | Data LSB | Data MSB ...
         if len(parts) >= 3:
             low_byte = parts[1]
             high_byte = parts[2]
             product_id = f"0x{high_byte[-2:]}{low_byte[-2:]}".lower()
 
+            # Infineon XDPE1A2GxB Family Hex Mapping
             if product_id in ['0x9e01', '0x9b01', '0xb201']:
                 print(f"[*] Auto-detected model XDPE1A2GxB from IC_DEVICE_ID ({product_id})")
                 return "1A2G"
 
+            # Infineon XDPE152x4D Family Hex Mapping
             elif product_id.startswith('0x8a') or product_id.startswith('0x8c') or product_id.startswith('0x90'):
                 print(f"[*] Auto-detected model XDPE152x4D from IC_DEVICE_ID ({product_id})")
                 return "152"
 
+            # Renesas RAA229641 Family Hex Mapping
+            # Manual states default is 49 D2 9B 00, but real silicon can return 49 D2 C9 00.
+            # We match MFR Code (Byte 3: 0x49) and ID High Byte (Byte 2: 0xD2) for robust detection.
             if len(parts) >= 5:
-                renesas_sig = "".join([x[-2:] for x in parts[1:5]]).lower()
-                if "49d29b00" in renesas_sig or "009bd249" in renesas_sig:
-                    print(f"[*] Auto-detected model Renesas RAA229641 from IC_DEVICE_ID")
+                byte3_mfr = parts[4][-2:].lower()
+                byte2_id_high = parts[3][-2:].lower()
+                if byte3_mfr == '49' and byte2_id_high == 'd2':
+                    print(f"[*] Auto-detected model Renesas RAA229641 from IC_DEVICE_ID (MFR: 49, ID_HIGH: D2)")
                     return "RAA229641"
     except Exception:
         pass
