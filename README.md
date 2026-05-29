@@ -29,7 +29,7 @@ StrataKit organizes its mixture of tools into vertical, function-driven layers, 
        ┌────────────────────────────────────────────────────────┐
        │ Layer 1: Hardware Interface Bus (I2C, SPI, GPIO, FPGA) │  --> platform_eng/ (Low-level)
        └────────────────────────────────────────────────────────┘
-
+```
 ## 📂 Repository Structure & Components
 
 ### 1. `rack_provisioning/` — Layer 4: Rack Orchestration & OS Deployment
