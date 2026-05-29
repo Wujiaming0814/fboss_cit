@@ -31,17 +31,17 @@ python3 nfc_tool.py --help
 ```
 
 ## Command Line Arguments
--m, --mode: Operation mode (read or write).
-- `-m, --mode`: Operation mode (`read` or `write`).
-- `-d, --data`: The text payload to write to the tag (only applicable in `write` mode).
-- `--i2c-bus`: The I2C bus number (e.g., `7`) or the full path (e.g., `/dev/i2c-7`). Default is `7`.
-- `--i2c-addr`: The I2C slave address of the NFC chip in Hex. Default is `0x28`.
-
--d, --data: The text payload to write to the tag (only applicable in write mode).
-
---i2c-bus: The I2C bus number (e.g., 7) or the full path (e.g., /dev/i2c-7). Default is 7.
-
---i2c-addr: The I2C slave address of the NFC chip in Hex. Default is 0x28.
+ -h, --help            show this help message and exit
+  -m {read,write}, --mode {read,write}
+                        Operation mode:
+                          'read'  - Wait for a tag and print its contents.
+                          'write' - Wait for a tag and write data to it.
+  -d DATA, --data DATA  The text data to write to the tag (used only in 'write' mode).
+  --i2c-bus I2C_BUS     The I2C bus number (e.g., 7) or full path (e.g., /dev/i2c-7) (default: 7)
+  --i2c-addr I2C_ADDR   The I2C slave address of the NFC controller (default: 0x28)
+  -t TIMEOUT, --timeout TIMEOUT
+                        Timeout in seconds to wait for an NFC tag (0 for infinite, default: 30)
+  -v, --verbose         Enable low-level NCI data stream trace logging.
 
 
 ## Examples
@@ -55,17 +55,20 @@ python3 nfc_tool.py -m read --i2c-bus 7 --i2c-addr 0x28
 ### Expected Output:
 
 ```Plaintext
-+------------------------------------------------------------+
-|             NFC Tag Information (Mode: Read)               |
-+--------------------+---------------------------------------+
-| UID                | 04 C7 48 92 06 10 90                  |
-| Protocol           | ISO-DEP (ISO14443-4)                  |
-+--------------------+---------------------------------------+
-| Max Capacity       | 256 bytes                             |
-| Content Length     | 41 bytes                              |
-| Record Type        | Text                                  |
-| Payload Data       | Celestica NFC Testing 2026, May 25    |
-+--------------------+---------------------------------------+
+Polling started... waiting for tag (Timeout: 30s)
+
++------------------------------------------------------------------------------+
+|                       NFC Tag Information (Mode: Read)                       |
++--------------------+---------------------------------------------------------+
+| UID                | 04 C7 48 92 06 10 90                                    |
+| Protocol           | ISO-DEP (ISO14443-4)                                    |
++--------------------+---------------------------------------------------------+
+| Max Capacity       | 256 bytes                                               |
+| Content Length     | 34 bytes                                                |
+| Record Type        | Text                                                    |
++--------------------+---------------------------------------------------------+
+| Payload Data       | CLS NFC Testing 2026 May 29                             |
++--------------------+---------------------------------------------------------+
 ```
 
 2. Writing to an NFC Tag
