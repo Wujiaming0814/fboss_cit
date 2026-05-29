@@ -31,6 +31,7 @@ python3 nfc_tool.py --help
 ```
 
 ## Command Line Arguments
+```bash
  -h, --help            show this help message and exit
   -m {read,write}, --mode {read,write}
                         Operation mode:
@@ -42,7 +43,7 @@ python3 nfc_tool.py --help
   -t TIMEOUT, --timeout TIMEOUT
                         Timeout in seconds to wait for an NFC tag (0 for infinite, default: 30)
   -v, --verbose         Enable low-level NCI data stream trace logging.
-
+```
 
 ## Examples
 1. Reading an NFC Tag (Default)
